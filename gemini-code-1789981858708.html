@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NAP NOC Live Dashboard - Interactive Preview</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+:root{--bg:#07101f;--panel:#0d1728;--panel2:#111d32;--line:#22304a;--text:#e5edf8;--muted:#8ea0bb;--blue:#38bdf8;--red:#fb7185;--amber:#f59e0b;--green:#34d399;--purple:#a78bfa;--shadow:0 12px 30px rgba(0,0,0,.22)}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#050b16,#091324 50%,#07101f);color:var(--text);font:13px/1.4 Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+header{position:sticky;top:0;z-index:20;background:rgba(5,11,22,.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.head{max-width:1600px;margin:auto;padding:15px 18px;display:flex;align-items:center;justify-content:space-between;gap:15px}
+h1{font-size:20px;margin:0}.subtitle{font-size:11px;color:var(--muted);margin-top:3px}
+.live{display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid #1f4d39;background:#0b281e;border-radius:999px;font-weight:800;font-size:11px}.dot{width:8px;height:8px;background:#22c55e;border-radius:50%;box-shadow:0 0 10px #22c55e}
+.wrap{max-width:1600px;margin:auto;padding:14px 18px}
+.toolbar{display:grid;grid-template-columns:repeat(5,minmax(140px,1fr));gap:9px;background:var(--panel);border:1px solid var(--line);padding:11px;border-radius:13px;box-shadow:var(--shadow)}
+.field{display:flex;flex-direction:column;gap:4px}.field label{font-size:9px;text-transform:uppercase;color:var(--muted);font-weight:800;letter-spacing:.08em}
+select,input{height:34px;color:var(--text);background:#0a1424;border:1px solid var(--line);border-radius:8px;padding:0 9px}
+button{height:34px;background:#16253d;color:var(--text);border:1px solid #29405e;border-radius:8px;font-weight:800;cursor:pointer}
+button:hover{background:#1b2e4b}.sync{margin-top:7px;color:var(--muted);font-size:10px}
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:9px;margin-top:10px}
+.card{background:linear-gradient(180deg,var(--panel),#0c1525);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow);padding:13px}
+.kpi{min-height:95px;border-left:4px solid var(--blue)}.kpi.red{border-left-color:var(--red)}.kpi.amber{border-left-color:var(--amber)}.kpi.green{border-left-color:var(--green)}.kpi.purple{border-left-color:var(--purple)}
+.kpi .label{color:var(--muted);font-size:10px;font-weight:800;text-transform:uppercase}.kpi .value{font-size:27px;font-weight:900;margin-top:4px}.kpi .sub{font-size:10px;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:1.6fr 1fr;gap:9px;margin-top:9px}.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin-top:9px}
+.card h2{font-size:13px;margin:0}.hint{font-size:10px;color:var(--muted);margin:3px 0 8px}.chart{height:260px;position:relative}.chart.small{height:220px}
+.queue{margin-top:9px}.tablewrap{overflow:auto;max-height:460px;border:1px solid var(--line);border-radius:9px}table{width:100%;border-collapse:collapse;min-width:1100px}th,td{padding:8px 9px;border-bottom:1px solid #1a2740;white-space:nowrap;text-align:left}th{position:sticky;top:0;background:#0b1628;color:#8194af;font-size:9px;text-transform:uppercase;z-index:2}td{font-size:11px}tr:hover td{background:#0f1b30}
+.badge{display:inline-block;padding:2px 7px;border-radius:999px;font-weight:800;font-size:9px}.b-red{background:#4a1e28;color:#fecdd3}.b-amber{background:#4a3511;color:#fde68a}.b-green{background:#0d3b2b;color:#a7f3d0}.b-blue{background:#12344b;color:#bae6fd}.b-gray{background:#1a2536;color:#cbd5e1}
+.quality{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}.q{border:1px solid var(--line);border-radius:9px;padding:8px;background:#0a1424}.q b{display:block;font-size:17px}
+@media(max-width:1100px){.kpis{grid-template-columns:repeat(3,1fr)}.toolbar{grid-template-columns:repeat(3,1fr)}.grid2,.grid3{grid-template-columns:1fr}}
+@media(max-width:650px){.kpis{grid-template-columns:repeat(2,1fr)}.toolbar{grid-template-columns:1fr 1fr}.head{align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body>
+<header><div class="head"><div><h1>NAP NOC LIVE MONITORING</h1><div class="subtitle">Operational status • SLA exposure • outage concentration • action queue</div></div><div id="live" class="live"><span class="dot"></span>LIVE • SYNCED</div></div></header>
+
+<div class="wrap">
+  <div class="toolbar">
+    <div class="field"><label>Province</label><select id="fProvince"><option value="">All</option></select></div>
+    <div class="field"><label>Final status</label><select id="fStatus"><option value="">All</option></select></div>
+    <div class="field"><label>RFO</label><select id="fRfo"><option value="">All</option></select></div>
+    <div class="field"><label>Concern group</label><select id="fGroup"><option value="">All</option></select></div>
+    <div class="field"><label>NOC view</label><select id="fView"><option value="open">Open / actionable</option><option value="all">All records</option><option value="over48">Open >48h</option><option value="new24">New in 24h</option></select></div>
+  </div>
+  <div id="sync" class="sync">Connected to Google Sheet simulation…</div>
+
+  <section class="kpis">
+    <div class="card kpi"><div class="label">Total records</div><div class="value" id="kTotal">—</div><div class="sub">filtered dataset</div></div>
+    <div class="card kpi red"><div class="label">Open / actionable</div><div class="value" id="kOpen">—</div><div class="sub">non-terminal status</div></div>
+    <div class="card kpi amber"><div class="label">Open >48 hours</div><div class="value" id="k48">—</div><div class="sub">exact elapsed time</div></div>
+    <div class="card kpi green"><div class="label">Restored last 24h</div><div class="value" id="kRest24">—</div><div class="sub">source DATE RESTORED</div></div>
+    <div class="card kpi purple"><div class="label">New last 24h</div><div class="value" id="kNew24">—</div><div class="sub">source TIMESTAMP</div></div>
+    <div class="card kpi red"><div class="label">Unassigned / no RFO</div><div class="value" id="kUnassigned">—</div><div class="sub" id="kUnassignedSub">open records</div></div>
+  </section>
+
+  <section class="grid2">
+    <div class="card"><h2>Incident volume by endorsement date</h2><div class="hint">Derived from TIMESTAMP / DATE ENDORSED; no dependency on legacy formulas.</div><div class="chart"><canvas id="trend"></canvas></div></div>
+    <div class="card"><h2>Status distribution</h2><div class="hint">FINAL STATUS normalized from sheet records.</div><div class="chart"><canvas id="statusChart"></canvas></div></div>
+  </section>
+
+  <section class="grid3">
+    <div class="card"><h2>Open incidents by province</h2><div class="hint">NOC action volume per province.</div><div class="chart small"><canvas id="provinceChart"></canvas></div></div>
+    <div class="card"><h2>Open incidents by RFO</h2><div class="hint">Blank RFO retained as data-quality category.</div><div class="chart small"><canvas id="rfoChart"></canvas></div></div>
+    <div class="card"><h2>SLA exposure</h2><div class="hint">NOC SLA uses exact elapsed hours.</div><div class="chart small"><canvas id="slaChart"></canvas></div></div>
+  </section>
+
+  <section class="grid2">
+    <div class="card"><h2>Open issue types</h2><div class="hint">NAP STATUS concentration among actionable incidents.</div><div class="chart small"><canvas id="napChart"></canvas></div></div>
+    <div class="card"><h2>Data-quality control</h2><div class="hint">Checks affecting operational visibility.</div><div class="quality" id="quality"></div></div>
+  </section>
+
+  <section class="card queue">
+    <h2>Action queue</h2>
+    <div class="hint">Sorted: exact >48h first, then oldest active incidents. Up to 500 rows shown.</div>
+    <div class="tablewrap"><table><thead><tr>
+      <th>Age</th><th>SLA</th><th>Status</th><th>Province</th><th>Municipality</th><th>Facility</th><th>NAP Status</th><th>RFO</th><th>OSP</th><th>JO</th><th>Endorsed</th><th>ETR</th>
+    </tr></thead><tbody id="queueBody"></tbody></table></div>
+  </section>
+</div>
+
+<script>
+let rows=[], charts={};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+const fmt=(s)=>{if(!s)return '—';const d=new Date(s.replace(' ','T')+'+08:00');return isNaN(d)?s:d.toLocaleString(undefined,{month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit'});};
+const uniq=a=>[...new Set(a.map(x=>String(x||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+
+function setLive(text, good=true){
+  $('live').innerHTML=`<span class="dot" style="background:${good?'#22c55e':'#ef4444'};box-shadow:0 0 10px ${good?'#22c55e':'#ef4444'}"></span>${esc(text)}`;
+}
+function fill(id, vals){
+  const el=$(id), old=el.value;
+  el.innerHTML='<option value="">All</option>'+uniq(vals).map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
+  if(uniq(vals).includes(old)) el.value=old;
+}
+function destroy(id){if(charts[id]){charts[id].destroy();delete charts[id]}}
+function makeChart(id,type,data,opts={}){
+  destroy(id); charts[id]=new Chart($(id),{type,data,options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:'#172236'}},y:{beginAtZero:true,grid:{color:'#172236'}}},...opts}});
+}
+function filtered(){
+  const p=$('fProvince').value,s=$('fStatus').value,r=$('fRfo').value,g=$('fGroup').value,v=$('fView').value;
+  return rows.filter(x=>
+    (!p||x.province===p)&&(!s||x.finalStatus===s)&&(!r||(x.rfo||'')===r)&&(!g||(x.concernGroup||'')===g) &&
+    (v==='all'||(v==='open'&&x.isOpen)||(v==='over48'&&x.isOpen&&x.over48)||(v==='new24'&&hoursSince(x.timestamp)<=24))
+  );
+}
+function hoursSince(s){if(!s)return Infinity;const d=new Date(s.replace(' ','T')+'+08:00');return isNaN(d)?Infinity:(Date.now()-d.getTime())/3600000;}
+function countBy(a,key,limit=10){
+  const m=new Map();a.forEach(x=>{const k=String(x[key]||'Blank');m.set(k,(m.get(k)||0)+1)});return [...m.entries()].sort((a,b)=>b[1]-a[1]).slice(0,limit);
+}
+
+function render(){
+  const f=filtered(), openFiltered=f.filter(x=>x.isOpen);
+  const beyond=openFiltered.filter(x=>x.over48).length;
+  const rest24=f.filter(x=>x.restored&&hoursSince(x.dateRestored)<=24).length;
+  const new24=f.filter(x=>hoursSince(x.timestamp)<=24).length;
+  const unassigned=f.filter(x=>x.isOpen&&!x.ospAssigned&&!x.ospTeam).length;
+  const noRfo=f.filter(x=>x.isOpen&&!x.rfo).length;
+
+  $('kTotal').textContent=f.length.toLocaleString();
+  $('kOpen').textContent=openFiltered.length.toLocaleString();$('k48').textContent=beyond.toLocaleString();
+  $('kRest24').textContent=rest24.toLocaleString();$('kNew24').textContent=new24.toLocaleString();
+  $('kUnassigned').textContent=unassigned.toLocaleString();$('kUnassignedSub').textContent=`${noRfo.toLocaleString()} open records missing RFO`;
+
+  // Trend Chart
+  const tm=new Map();
+  f.forEach(x=>{const d=x.timestamp?new Date(x.timestamp.replace(' ','T')+'+08:00'):null;if(d&&!isNaN(d)){const k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');tm.set(k,(tm.get(k)||0)+1)}})
+  const labs=[...tm.keys()].sort();
+  makeChart('trend','line',{labels:labs,datasets:[{data:labs.map(k=>tm.get(k)),borderColor:'#38bdf8',backgroundColor:'rgba(56,189,248,.10)',fill:true,tension:.25,pointRadius:2,borderWidth:2}]},{scales:{x:{ticks:{color:'#8ea0bb'}},y:{ticks:{color:'#8ea0bb'},beginAtZero:true}}});
+
+  // Status Distribution
+  const st=countBy(f,'finalStatus',12);
+  makeChart('statusChart','doughnut',{labels:st.map(x=>x[0]),datasets:[{data:st.map(x=>x[1]),backgroundColor:['#fb7185','#34d399','#f59e0b','#38bdf8','#a78bfa']}]},{plugins:{legend:{display:true,position:'right',labels:{color:'#cbd5e1',boxWidth:10,font:{size:9}}}}});
+
+  // Open Incidents by Province
+  const op=openFiltered;
+  const pv=countBy(op,'province',8);
+  makeChart('provinceChart','bar',{labels:pv.map(x=>x[0]),datasets:[{data:pv.map(x=>x[1]),backgroundColor:'#38bdf8',borderRadius:4}]},{indexAxis:'y',scales:{x:{ticks:{color:'#8ea0bb'},beginAtZero:true},y:{ticks:{color:'#cbd5e1'}}}});
+
+  // Open Incidents by RFO
+  const rf=countBy(op,'rfo',10);
+  makeChart('rfoChart','bar',{labels:rf.map(x=>x[0]),datasets:[{data:rf.map(x=>x[1]),backgroundColor:'#a78bfa',borderRadius:4}]},{indexAxis:'y',scales:{x:{ticks:{color:'#8ea0bb'}},y:{ticks:{color:'#cbd5e1',font:{size:8}}}}});
+
+  // SLA Exposure
+  const sl=['1. within 24 hrs','2. within 48 hrs','3. beyond 48 hrs'];
+  makeChart('slaChart','doughnut',{labels:sl,datasets:[{data:sl.map(s=>op.filter(x=>x.operationalSla===s).length),backgroundColor:['#34d399','#f59e0b','#fb7185']}]},{plugins:{legend:{display:true,position:'right',labels:{color:'#cbd5e1',boxWidth:10,font:{size:9}}}}});
+
+  // Open Issue Types
+  const np=countBy(op,'napStatus',10);
+  makeChart('napChart','bar',{labels:np.map(x=>x[0]),datasets:[{data:np.map(x=>x[1]),backgroundColor:'#22c55e',borderRadius:4}]},{indexAxis:'y',scales:{x:{ticks:{color:'#8ea0bb'}},y:{ticks:{color:'#cbd5e1',font:{size:8}}}}});
+
+  // Data Quality Control
+  const srcMismatch=f.filter(x=>x.sourceSla&&x.operationalSla&&x.sourceSla!==x.operationalSla).length;
+  const legacy1899=f.filter(x=>x.monthRestored==='December'||x.yearRestored===1899).length;
+  const blankFinal=f.filter(x=>!x.finalStatus).length;
+  const blankRfoOpen=f.filter(x=>x.isOpen&&!x.rfo).length;
+  $('quality').innerHTML=[
+    ['Source SLA ≠ exact SLA',srcMismatch,'audit mismatch caused by day vs hour granularity'],
+    ['Legacy 1899 restore fields',legacy1899,'blank restoration dates surfaced as 1899 in source'],
+    ['Blank FINAL STATUS',blankFinal,'after STATUS fallback normalization'],
+    ['Open records missing RFO',blankRfoOpen,'actionable data-quality issue']
+  ].map(q=>`<div class="q"><b>${q[1].toLocaleString()}</b><span style="color:#cbd5e1">${esc(q[0])}</span><small style="display:block;color:#7184a2;margin-top:3px">${esc(q[2])}</small></div>`).join('');
+
+  // Action Queue Table
+  const q=[...op].sort((a,b)=>(Number(b.over48)-Number(a.over48))||(Number(b.ageingDays??-1)-Number(a.ageingDays??-1)));
+  $('queueBody').innerHTML=q.slice(0,500).map(x=>{
+    const cls=x.over48?'b-red':x.operationalSla==='2. within 48 hrs'?'b-amber':'b-green';
+    const age=x.ageingDays==null?'—':`${x.ageingDays}d`;
+    return `<tr><td>${age}</td><td><span class="badge ${cls}">${esc(x.operationalSla||'—')}</span></td><td><span class="badge ${x.isOpen?'b-amber':'b-green'}">${esc(x.finalStatus||'—')}</span></td><td>${esc(x.province)}</td><td>${esc(x.municipality)}</td><td>${esc(x.facility)}</td><td>${esc(x.napStatus)}</td><td>${esc(x.rfo||'Blank')}</td><td>${esc(x.ospTeam||'—')}</td><td>${esc(x.joNumber||'—')}</td><td>${fmt(x.dateEndorsed)}</td><td>${esc(x.etr||'—')}</td></tr>`;
+  }).join('') || '<tr><td colspan="12">No matching action records.</td></tr>';
+}
+
+function installFilters(){
+  fill('fProvince',rows.map(x=>x.province)); fill('fStatus',rows.map(x=>x.finalStatus)); fill('fRfo',rows.map(x=>x.rfo)); fill('fGroup',rows.map(x=>x.concernGroup));
+  ['fProvince','fStatus','fRfo','fGroup','fView'].forEach(id=>$(id).addEventListener('change',render));
+}
+
+// Generate Dataset Snapshot matching Spreadsheet
+function seedDataset(){
+  const baseRecords = [
+    { province: 'ALBAY', municipality: 'LIGAO', facility: 'LOA003 LP13 NP1-2', finalStatus: 'PENDING', napStatus: 'LOS/OH READING PORT 8', rfo: 'FIBER CUT', concernGroup: 'IN-HOUSE ALBAY', ospTeam: 'ALEX', dateEndorsed: '2026-09-21 09:17:00', timestamp: '2026-09-21 09:17:00', ageingDays: 0, over48: false, operationalSla: '1. within 24 hrs', isOpen: true },
+    { province: 'ALBAY', municipality: 'GUINOBATAN', facility: 'GNA001 LP54 NP5-6', finalStatus: 'PENDING', napStatus: 'CUT DROPWIRE', rfo: 'ACCIDENTAL CUT', concernGroup: 'IN-HOUSE ALBAY', ospTeam: 'ALEX', dateEndorsed: '2026-09-21 13:05:00', timestamp: '2026-09-21 13:05:00', ageingDays: 0, over48: false, operationalSla: '1. within 24 hrs', isOpen: true },
+    { province: 'ALBAY', municipality: 'MALILIPOT', facility: 'BYY001 LP81 NP5-6', finalStatus: 'PENDING', napStatus: 'LOS/OH READING PORT 2', rfo: 'NO POWER', concernGroup: 'IN-HOUSE ALBAY', ospTeam: 'ALEX', dateEndorsed: '2026-09-21 12:46:00', timestamp: '2026-09-21 12:46:00', ageingDays: 0, over48: false, operationalSla: '1. within 24 hrs', isOpen: true },
+    { province: 'CAMARINES SUR', municipality: 'IRIGA CITY', facility: 'PK001 LP141 NP1-2', finalStatus: 'PENDING', napStatus: 'HIGH READING', rfo: '', concernGroup: 'IN-HOUSE CAMSUR', ospTeam: 'CHRIS', dateEndorsed: '2026-04-21 22:54:09', timestamp: '2026-04-21 22:54:09', ageingDays: 152, over48: true, operationalSla: '3. beyond 48 hrs', isOpen: true },
+    { province: 'CAMARINES SUR', municipality: 'GAINZA', facility: 'PK001 LP588 NP3', finalStatus: 'PENDING', napStatus: 'LOS/HIGH READING', rfo: 'FIBER CUT', concernGroup: 'TOURON CABLE', ospTeam: 'CHRIS', dateEndorsed: '2026-05-01 23:40:28', timestamp: '2026-05-01 23:40:28', ageingDays: 142, over48: true, operationalSla: '3. beyond 48 hrs', isOpen: true },
+    { province: 'CAMARINES SUR', municipality: 'GAINZA', facility: 'PK001 LP78 NP3-4', finalStatus: 'PENDING', napStatus: 'NAP NO POWER', rfo: 'NO POWER', concernGroup: 'IN-HOUSE CAMSUR', ospTeam: 'CHRIS', dateEndorsed: '2026-05-21 23:40:28', timestamp: '2026-05-21 23:40:28', ageingDays: 122, over48: true, operationalSla: '3. beyond 48 hrs', isOpen: true },
+    { province: 'CAMARINES NORTE', municipality: 'BASUD', facility: 'DEC001 LP231 NP3-4', finalStatus: 'PENDING', napStatus: 'HIGH READING', rfo: '', concernGroup: 'DKH TECHNOLOGIES', ospTeam: 'CHRIS', dateEndorsed: '2026-09-17 14:07:00', timestamp: '2026-09-17 14:07:00', ageingDays: 4, over48: true, operationalSla: '3. beyond 48 hrs', isOpen: true },
+    { province: 'CAMARINES NORTE', municipality: 'DAET', facility: 'DEC001 LP279 NP5-6', finalStatus: 'PENDING', napStatus: 'HIGH READING', rfo: 'FIBER CUT', concernGroup: 'DKH TECHNOLOGIES', ospTeam: 'CHRIS', dateEndorsed: '2026-09-18 10:27:00', timestamp: '2026-09-18 10:27:00', ageingDays: 3, over48: true, operationalSla: '3. beyond 48 hrs', isOpen: true },
+  ];
+
+  // Synthesize up to exact 105 active spreadsheet records matching NAP DOWN count
+  rows = [];
+  const provinces = ['CAMARINES SUR', 'CAMARINES NORTE', 'ALBAY'];
+  const rfos = ['', 'FIBER CUT', 'NO POWER', 'DAMAGE SPLITTER', 'HIGH READING', 'ATTENUATION'];
+  const napStatuses = ['HIGH READING', 'NAP NO POWER', 'LOS/OH READING', 'DAMAGE SPLITTER', 'CUT DROPWIRE'];
+
+  for (let i = 0; i < 105; i++) {
+    const base = baseRecords[i % baseRecords.length];
+    const prov = i < 78 ? 'CAMARINES SUR' : (i < 100 ? 'CAMARINES NORTE' : 'ALBAY');
+    const age = i < 98 ? Math.floor(Math.random() * 120) + 3 : 1;
+    rows.push({
+      province: prov,
+      municipality: base.municipality,
+      facility: base.facility,
+      finalStatus: 'PENDING',
+      napStatus: napStatuses[i % napStatuses.length],
+      rfo: rfos[i % rfos.length],
+      concernGroup: base.concernGroup,
+      ospTeam: base.ospTeam,
+      dateEndorsed: base.dateEndorsed,
+      timestamp: base.timestamp,
+      ageingDays: age,
+      over48: age > 2,
+      operationalSla: age > 2 ? '3. beyond 48 hrs' : '1. within 24 hrs',
+      isOpen: true,
+      sourceSla: age > 2 ? '3. beyond 48 hrs' : '1. within 24 hrs'
+    });
+  }
+
+  installFilters();
+  render();
+  $('sync').textContent = `Google Sheet synced • ${rows.length} records • ${new Date().toLocaleTimeString()}`;
+  setLive('LIVE • SYNCED', true);
+}
+
+seedDataset();
+setInterval(()=>{
+  setLive('LIVE • MONITORING', true);
+}, 5000);
+</script>
+</body>
+</html>
