@@ -3,8 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>NAP NOC Live Dashboard - Interactive Preview</title>
+<title>NAP NOC Live Dashboard</title>
+<!-- Chart.js and PapaParse CDN -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <style>
 :root{--bg:#07101f;--panel:#0d1728;--panel2:#111d32;--line:#22304a;--text:#e5edf8;--muted:#8ea0bb;--blue:#38bdf8;--red:#fb7185;--amber:#f59e0b;--green:#34d399;--purple:#a78bfa;--shadow:0 12px 30px rgba(0,0,0,.22)}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#050b16,#091324 50%,#07101f);color:var(--text);font:13px/1.4 Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
@@ -32,7 +34,7 @@ button:hover{background:#1b2e4b}.sync{margin-top:7px;color:var(--muted);font-siz
 </style>
 </head>
 <body>
-<header><div class="head"><div><h1>NAP NOC LIVE MONITORING</h1><div class="subtitle">Operational status • SLA exposure • outage concentration • action queue</div></div><div id="live" class="live"><span class="dot"></span>LIVE • SYNCED</div></div></header>
+<header><div class="head"><div><h1>NAP NOC LIVE MONITORING</h1><div class="subtitle">Operational status • SLA exposure • outage concentration • action queue</div></div><div id="live" class="live"><span class="dot"></span>LIVE • SYNCING</div></div></header>
 
 <div class="wrap">
   <div class="toolbar">
@@ -42,7 +44,7 @@ button:hover{background:#1b2e4b}.sync{margin-top:7px;color:var(--muted);font-siz
     <div class="field"><label>Concern group</label><select id="fGroup"><option value="">All</option></select></div>
     <div class="field"><label>NOC view</label><select id="fView"><option value="open">Open / actionable</option><option value="all">All records</option><option value="over48">Open >48h</option><option value="new24">New in 24h</option></select></div>
   </div>
-  <div id="sync" class="sync">Connected to Google Sheet simulation…</div>
+  <div id="sync" class="sync">Connecting to live Google Sheet…</div>
 
   <section class="kpis">
     <div class="card kpi"><div class="label">Total records</div><div class="value" id="kTotal">—</div><div class="sub">filtered dataset</div></div>
@@ -54,14 +56,14 @@ button:hover{background:#1b2e4b}.sync{margin-top:7px;color:var(--muted);font-siz
   </section>
 
   <section class="grid2">
-    <div class="card"><h2>Incident volume by endorsement date</h2><div class="hint">Derived from TIMESTAMP / DATE ENDORSED; no dependency on legacy formulas.</div><div class="chart"><canvas id="trend"></canvas></div></div>
+    <div class="card"><h2>Incident volume by endorsement date</h2><div class="hint">Derived directly from TIMESTAMP / DATE ENDORSED.</div><div class="chart"><canvas id="trend"></canvas></div></div>
     <div class="card"><h2>Status distribution</h2><div class="hint">FINAL STATUS normalized from sheet records.</div><div class="chart"><canvas id="statusChart"></canvas></div></div>
   </section>
 
   <section class="grid3">
     <div class="card"><h2>Open incidents by province</h2><div class="hint">NOC action volume per province.</div><div class="chart small"><canvas id="provinceChart"></canvas></div></div>
     <div class="card"><h2>Open incidents by RFO</h2><div class="hint">Blank RFO retained as data-quality category.</div><div class="chart small"><canvas id="rfoChart"></canvas></div></div>
-    <div class="card"><h2>SLA exposure</h2><div class="hint">NOC SLA uses exact elapsed hours.</div><div class="chart small"><canvas id="slaChart"></canvas></div></div>
+    <div class="card"><h2>SLA exposure</h2><div class="hint">NOC SLA calculated using exact elapsed hours.</div><div class="chart small"><canvas id="slaChart"></canvas></div></div>
   </section>
 
   <section class="grid2">
@@ -79,7 +81,10 @@ button:hover{background:#1b2e4b}.sync{margin-top:7px;color:var(--muted);font-siz
 </div>
 
 <script>
-let rows=[], charts={};
+// Target Google Sheet CSV Endpoint
+const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1yhtm8pTJ9VP0TUrFm2JedYoCZ_M22K196luw3u9Xl4s/gviz/tq?tqx=out:csv&gid=1995500191';
+
+let rows=[], charts={}, isInitialLoad=true;
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
 const fmt=(s)=>{if(!s)return '—';const d=new Date(s.replace(' ','T')+'+08:00');return isNaN(d)?s:d.toLocaleString(undefined,{month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit'});};
@@ -130,7 +135,7 @@ function render(){
 
   // Status Distribution
   const st=countBy(f,'finalStatus',12);
-  makeChart('statusChart','doughnut',{labels:st.map(x=>x[0]),datasets:[{data:st.map(x=>x[1]),backgroundColor:['#fb7185','#34d399','#f59e0b','#38bdf8','#a78bfa']}]},{plugins:{legend:{display:true,position:'right',labels:{color:'#cbd5e1',boxWidth:10,font:{size:9}}}}});
+  makeChart('statusChart','doughnut',{labels:st.map(x=>x[0]),datasets:[{data:st.map(x=>x[1]),backgroundColor:['#fb7185','#34d399','#f59e0b','#38bdf8','#a78bfa','#64748b']}]},{plugins:{legend:{display:true,position:'right',labels:{color:'#cbd5e1',boxWidth:10,font:{size:9}}}}});
 
   // Open Incidents by Province
   const op=openFiltered;
@@ -175,58 +180,86 @@ function installFilters(){
   ['fProvince','fStatus','fRfo','fGroup','fView'].forEach(id=>$(id).addEventListener('change',render));
 }
 
-// Generate Dataset Snapshot matching Spreadsheet
-function seedDataset(){
-  const baseRecords = [
-    { province: 'ALBAY', municipality: 'LIGAO', facility: 'LOA003 LP13 NP1-2', finalStatus: 'PENDING', napStatus: 'LOS/OH READING PORT 8', rfo: 'FIBER CUT', concernGroup: 'IN-HOUSE ALBAY', ospTeam: 'ALEX', dateEndorsed: '2026-09-21 09:17:00', timestamp: '2026-09-21 09:17:00', ageingDays: 0, over48: false, operationalSla: '1. within 24 hrs', isOpen: true },
-    { province: 'ALBAY', municipality: 'GUINOBATAN', facility: 'GNA001 LP54 NP5-6', finalStatus: 'PENDING', napStatus: 'CUT DROPWIRE', rfo: 'ACCIDENTAL CUT', concernGroup: 'IN-HOUSE ALBAY', ospTeam: 'ALEX', dateEndorsed: '2026-09-21 13:05:00', timestamp: '2026-09-21 13:05:00', ageingDays: 0, over48: false, operationalSla: '1. within 24 hrs', isOpen: true },
-    { province: 'ALBAY', municipality: 'MALILIPOT', facility: 'BYY001 LP81 NP5-6', finalStatus: 'PENDING', napStatus: 'LOS/OH READING PORT 2', rfo: 'NO POWER', concernGroup: 'IN-HOUSE ALBAY', ospTeam: 'ALEX', dateEndorsed: '2026-09-21 12:46:00', timestamp: '2026-09-21 12:46:00', ageingDays: 0, over48: false, operationalSla: '1. within 24 hrs', isOpen: true },
-    { province: 'CAMARINES SUR', municipality: 'IRIGA CITY', facility: 'PK001 LP141 NP1-2', finalStatus: 'PENDING', napStatus: 'HIGH READING', rfo: '', concernGroup: 'IN-HOUSE CAMSUR', ospTeam: 'CHRIS', dateEndorsed: '2026-04-21 22:54:09', timestamp: '2026-04-21 22:54:09', ageingDays: 152, over48: true, operationalSla: '3. beyond 48 hrs', isOpen: true },
-    { province: 'CAMARINES SUR', municipality: 'GAINZA', facility: 'PK001 LP588 NP3', finalStatus: 'PENDING', napStatus: 'LOS/HIGH READING', rfo: 'FIBER CUT', concernGroup: 'TOURON CABLE', ospTeam: 'CHRIS', dateEndorsed: '2026-05-01 23:40:28', timestamp: '2026-05-01 23:40:28', ageingDays: 142, over48: true, operationalSla: '3. beyond 48 hrs', isOpen: true },
-    { province: 'CAMARINES SUR', municipality: 'GAINZA', facility: 'PK001 LP78 NP3-4', finalStatus: 'PENDING', napStatus: 'NAP NO POWER', rfo: 'NO POWER', concernGroup: 'IN-HOUSE CAMSUR', ospTeam: 'CHRIS', dateEndorsed: '2026-05-21 23:40:28', timestamp: '2026-05-21 23:40:28', ageingDays: 122, over48: true, operationalSla: '3. beyond 48 hrs', isOpen: true },
-    { province: 'CAMARINES NORTE', municipality: 'BASUD', facility: 'DEC001 LP231 NP3-4', finalStatus: 'PENDING', napStatus: 'HIGH READING', rfo: '', concernGroup: 'DKH TECHNOLOGIES', ospTeam: 'CHRIS', dateEndorsed: '2026-09-17 14:07:00', timestamp: '2026-09-17 14:07:00', ageingDays: 4, over48: true, operationalSla: '3. beyond 48 hrs', isOpen: true },
-    { province: 'CAMARINES NORTE', municipality: 'DAET', facility: 'DEC001 LP279 NP5-6', finalStatus: 'PENDING', napStatus: 'HIGH READING', rfo: 'FIBER CUT', concernGroup: 'DKH TECHNOLOGIES', ospTeam: 'CHRIS', dateEndorsed: '2026-09-18 10:27:00', timestamp: '2026-09-18 10:27:00', ageingDays: 3, over48: true, operationalSla: '3. beyond 48 hrs', isOpen: true },
-  ];
+// Fetch Live CSV Data from Google Sheet
+function fetchSheetData(){
+  Papa.parse(SHEET_CSV_URL + '&_nocache=' + Date.now(), {
+    download: true,
+    header: true,
+    skipEmptyLines: true,
+    complete: function(results) {
+      if(!results.data || results.data.length === 0){
+        $('sync').textContent = 'Unable to parse Google Sheet data.';
+        setLive('ERROR • RETRYING', false);
+        return;
+      }
 
-  // Synthesize up to exact 105 active spreadsheet records matching NAP DOWN count
-  rows = [];
-  const provinces = ['CAMARINES SUR', 'CAMARINES NORTE', 'ALBAY'];
-  const rfos = ['', 'FIBER CUT', 'NO POWER', 'DAMAGE SPLITTER', 'HIGH READING', 'ATTENUATION'];
-  const napStatuses = ['HIGH READING', 'NAP NO POWER', 'LOS/OH READING', 'DAMAGE SPLITTER', 'CUT DROPWIRE'];
+      const now = Date.now();
+      rows = results.data.map(r => {
+        const getVal = (col) => r[col] || r[col.toUpperCase()] || r[col.toLowerCase()] || '';
+        
+        const rawStatus = getVal('STATUS');
+        const rawFinalStatus = getVal('FINAL STATUS') || rawStatus || 'PENDING';
+        const statusUpper = rawFinalStatus.toUpperCase().trim();
 
-  for (let i = 0; i < 105; i++) {
-    const base = baseRecords[i % baseRecords.length];
-    const prov = i < 78 ? 'CAMARINES SUR' : (i < 100 ? 'CAMARINES NORTE' : 'ALBAY');
-    const age = i < 98 ? Math.floor(Math.random() * 120) + 3 : 1;
-    rows.push({
-      province: prov,
-      municipality: base.municipality,
-      facility: base.facility,
-      finalStatus: 'PENDING',
-      napStatus: napStatuses[i % napStatuses.length],
-      rfo: rfos[i % rfos.length],
-      concernGroup: base.concernGroup,
-      ospTeam: base.ospTeam,
-      dateEndorsed: base.dateEndorsed,
-      timestamp: base.timestamp,
-      ageingDays: age,
-      over48: age > 2,
-      operationalSla: age > 2 ? '3. beyond 48 hrs' : '1. within 24 hrs',
-      isOpen: true,
-      sourceSla: age > 2 ? '3. beyond 48 hrs' : '1. within 24 hrs'
-    });
-  }
+        const isClosed = ['RESOLVED', 'CLOSED', 'RESTORED', 'COMPLETED', 'CANCELLED'].includes(statusUpper);
+        const isOpen = !isClosed;
 
-  installFilters();
-  render();
-  $('sync').textContent = `Google Sheet synced • ${rows.length} records • ${new Date().toLocaleTimeString()}`;
-  setLive('LIVE • SYNCED', true);
+        const timestamp = getVal('TIMESTAMP');
+        const dateEndorsed = getVal('DATE ENDORSED') || timestamp;
+        const dateRestored = getVal('DATE RESTORED');
+
+        const hours = hoursSince(dateEndorsed || timestamp);
+        const over48 = isOpen && (hours > 48);
+        const ageingDays = (isOpen && hours !== Infinity) ? Math.floor(hours / 24) : null;
+
+        let operationalSla = '1. within 24 hrs';
+        if (hours > 48) operationalSla = '3. beyond 48 hrs';
+        else if (hours > 24) operationalSla = '2. within 48 hrs';
+
+        return {
+          province: String(getVal('PROVINCE')).trim(),
+          municipality: String(getVal('MUNICIPALITY')).trim(),
+          facility: String(getVal('FACILITY')).trim(),
+          finalStatus: rawFinalStatus.trim(),
+          napStatus: String(getVal('NAP STATUS')).trim(),
+          rfo: String(getVal('RFO')).trim(),
+          concernGroup: String(getVal('CONCERN GROUP')).trim(),
+          ospTeam: String(getVal('OSP TEAM')).trim(),
+          ospAssigned: String(getVal('OSP ASSIGNED') || getVal('OSP TEAM')).trim(),
+          joNumber: String(getVal('JO')).trim(),
+          etr: String(getVal('ETR')).trim(),
+          timestamp: timestamp,
+          dateEndorsed: dateEndorsed,
+          dateRestored: dateRestored,
+          sourceSla: String(getVal('SLA')).trim(),
+          operationalSla: operationalSla,
+          isOpen: isOpen,
+          over48: over48,
+          ageingDays: ageingDays,
+          restored: !isOpen && !!dateRestored
+        };
+      });
+
+      if(isInitialLoad){
+        installFilters();
+        isInitialLoad = false;
+      }
+
+      render();
+      $('sync').textContent = `Google Sheet connected • ${rows.length.toLocaleString()} records • Last updated ${new Date().toLocaleTimeString()}`;
+      setLive('LIVE • SYNCED', true);
+    },
+    error: function(err) {
+      $('sync').textContent = 'Sync error connecting to Google Sheet: ' + err;
+      setLive('OFFLINE • RETRYING', false);
+    }
+  });
 }
 
-seedDataset();
-setInterval(()=>{
-  setLive('LIVE • MONITORING', true);
-}, 5000);
+// Initial fetch and automatic polling interval (every 15 seconds)
+fetchSheetData();
+setInterval(fetchSheetData, 15000);
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) fetchSheetData(); });
 </script>
 </body>
 </html>
