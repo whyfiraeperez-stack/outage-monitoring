@@ -81,27 +81,61 @@ button:hover{background:#1b2e4b}.sync{margin-top:7px;color:var(--muted);font-siz
 </div>
 
 <script>
-// Target Google Sheet CSV Endpoint
 const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1yhtm8pTJ9VP0TUrFm2JedYoCZ_M22K196luw3u9Xl4s/gviz/tq?tqx=out:csv&gid=1995500191';
 
 let rows=[], charts={}, isInitialLoad=true;
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
-const fmt=(s)=>{if(!s)return '—';const d=new Date(s.replace(' ','T')+'+08:00');return isNaN(d)?s:d.toLocaleString(undefined,{month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit'});};
 const uniq=a=>[...new Set(a.map(x=>String(x||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+
+function parseDate(s) {
+  if (!s) return null;
+  let str = String(s).trim();
+  if (!str) return null;
+  if (str.includes('/')) {
+    const parts = str.split(' ');
+    const dParts = parts[0].split('/');
+    if (dParts.length === 3) {
+      const m = dParts[0].padStart(2, '0');
+      const d = dParts[1].padStart(2, '0');
+      const y = dParts[2].length === 2 ? '20' + dParts[2] : dParts[2];
+      const time = parts[1] || '00:00:00';
+      str = `${y}-${m}-${d}T${time}`;
+    }
+  } else {
+    str = str.replace(' ', 'T');
+  }
+  const dt = new Date(str.includes('T') && !str.includes('+') && !str.includes('Z') ? str + '+08:00' : str);
+  return isNaN(dt.getTime()) ? null : dt;
+}
+
+function hoursSince(s) {
+  const d = parseDate(s);
+  return d ? (Date.now() - d.getTime()) / 3600000 : Infinity;
+}
+
+function fmt(s) {
+  const d = parseDate(s);
+  return d ? d.toLocaleString(undefined,{month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : (s || '—');
+}
 
 function setLive(text, good=true){
   $('live').innerHTML=`<span class="dot" style="background:${good?'#22c55e':'#ef4444'};box-shadow:0 0 10px ${good?'#22c55e':'#ef4444'}"></span>${esc(text)}`;
 }
+
 function fill(id, vals){
   const el=$(id), old=el.value;
   el.innerHTML='<option value="">All</option>'+uniq(vals).map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
   if(uniq(vals).includes(old)) el.value=old;
 }
+
 function destroy(id){if(charts[id]){charts[id].destroy();delete charts[id]}}
+
 function makeChart(id,type,data,opts={}){
-  destroy(id); charts[id]=new Chart($(id),{type,data,options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:'#172236'}},y:{beginAtZero:true,grid:{color:'#172236'}}},...opts}});
+  destroy(id);
+  charts[id]=new Chart($(id),{type,data,options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:'#172236'}},y:{beginAtZero:true,grid:{color:'#172236'}}},...opts}});
 }
+
 function filtered(){
   const p=$('fProvince').value,s=$('fStatus').value,r=$('fRfo').value,g=$('fGroup').value,v=$('fView').value;
   return rows.filter(x=>
@@ -109,9 +143,14 @@ function filtered(){
     (v==='all'||(v==='open'&&x.isOpen)||(v==='over48'&&x.isOpen&&x.over48)||(v==='new24'&&hoursSince(x.timestamp)<=24))
   );
 }
-function hoursSince(s){if(!s)return Infinity;const d=new Date(s.replace(' ','T')+'+08:00');return isNaN(d)?Infinity:(Date.now()-d.getTime())/3600000;}
+
 function countBy(a,key,limit=10){
-  const m=new Map();a.forEach(x=>{const k=String(x[key]||'Blank');m.set(k,(m.get(k)||0)+1)});return [...m.entries()].sort((a,b)=>b[1]-a[1]).slice(0,limit);
+  const m=new Map();
+  a.forEach(x=>{
+    const k=String(x[key]||'Blank').trim() || 'Blank';
+    m.set(k,(m.get(k)||0)+1);
+  });
+  return [...m.entries()].sort((a,b)=>b[1]-a[1]).slice(0,limit);
 }
 
 function render(){
@@ -119,8 +158,8 @@ function render(){
   const beyond=openFiltered.filter(x=>x.over48).length;
   const rest24=f.filter(x=>x.restored&&hoursSince(x.dateRestored)<=24).length;
   const new24=f.filter(x=>hoursSince(x.timestamp)<=24).length;
-  const unassigned=f.filter(x=>x.isOpen&&!x.ospAssigned&&!x.ospTeam).length;
-  const noRfo=f.filter(x=>x.isOpen&&!x.rfo).length;
+  const unassigned=f.filter(x=>x.isOpen&&(!x.ospAssigned||x.ospAssigned==='—')&&(!x.ospTeam||x.ospTeam==='—')).length;
+  const noRfo=f.filter(x=>x.isOpen&&(!x.rfo||x.rfo==='Blank')).length;
 
   $('kTotal').textContent=f.length.toLocaleString();
   $('kOpen').textContent=openFiltered.length.toLocaleString();$('k48').textContent=beyond.toLocaleString();
@@ -129,7 +168,13 @@ function render(){
 
   // Trend Chart
   const tm=new Map();
-  f.forEach(x=>{const d=x.timestamp?new Date(x.timestamp.replace(' ','T')+'+08:00'):null;if(d&&!isNaN(d)){const k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');tm.set(k,(tm.get(k)||0)+1)}})
+  f.forEach(x=>{
+    const d=parseDate(x.timestamp || x.dateEndorsed);
+    if(d){
+      const k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+      tm.set(k,(tm.get(k)||0)+1);
+    }
+  });
   const labs=[...tm.keys()].sort();
   makeChart('trend','line',{labels:labs,datasets:[{data:labs.map(k=>tm.get(k)),borderColor:'#38bdf8',backgroundColor:'rgba(56,189,248,.10)',fill:true,tension:.25,pointRadius:2,borderWidth:2}]},{scales:{x:{ticks:{color:'#8ea0bb'}},y:{ticks:{color:'#8ea0bb'},beginAtZero:true}}});
 
@@ -157,8 +202,8 @@ function render(){
   // Data Quality Control
   const srcMismatch=f.filter(x=>x.sourceSla&&x.operationalSla&&x.sourceSla!==x.operationalSla).length;
   const legacy1899=f.filter(x=>x.monthRestored==='December'||x.yearRestored===1899).length;
-  const blankFinal=f.filter(x=>!x.finalStatus).length;
-  const blankRfoOpen=f.filter(x=>x.isOpen&&!x.rfo).length;
+  const blankFinal=f.filter(x=>!x.finalStatus||x.finalStatus==='Blank').length;
+  const blankRfoOpen=f.filter(x=>x.isOpen&&(!x.rfo||x.rfo==='Blank')).length;
   $('quality').innerHTML=[
     ['Source SLA ≠ exact SLA',srcMismatch,'audit mismatch caused by day vs hour granularity'],
     ['Legacy 1899 restore fields',legacy1899,'blank restoration dates surfaced as 1899 in source'],
@@ -176,7 +221,10 @@ function render(){
 }
 
 function installFilters(){
-  fill('fProvince',rows.map(x=>x.province)); fill('fStatus',rows.map(x=>x.finalStatus)); fill('fRfo',rows.map(x=>x.rfo)); fill('fGroup',rows.map(x=>x.concernGroup));
+  fill('fProvince',rows.map(x=>x.province));
+  fill('fStatus',rows.map(x=>x.finalStatus));
+  fill('fRfo',rows.map(x=>x.rfo));
+  fill('fGroup',rows.map(x=>x.concernGroup));
   ['fProvince','fStatus','fRfo','fGroup','fView'].forEach(id=>$(id).addEventListener('change',render));
 }
 
@@ -193,13 +241,17 @@ function fetchSheetData(){
         return;
       }
 
-      const now = Date.now();
       rows = results.data.map(r => {
-        const getVal = (col) => r[col] || r[col.toUpperCase()] || r[col.toLowerCase()] || '';
-        
+        // Robust Column Matcher (ignores case, spaces, symbols)
+        const getVal = (colName) => {
+          const target = String(colName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+          const key = Object.keys(r).find(k => k.toLowerCase().replace(/[^a-z0-9]/g, '') === target);
+          return (key && r[key] !== undefined) ? String(r[key]).trim() : '';
+        };
+
         const rawStatus = getVal('STATUS');
         const rawFinalStatus = getVal('FINAL STATUS') || rawStatus || 'PENDING';
-        const statusUpper = rawFinalStatus.toUpperCase().trim();
+        const statusUpper = rawFinalStatus.toUpperCase();
 
         const isClosed = ['RESOLVED', 'CLOSED', 'RESTORED', 'COMPLETED', 'CANCELLED'].includes(statusUpper);
         const isOpen = !isClosed;
@@ -217,21 +269,21 @@ function fetchSheetData(){
         else if (hours > 24) operationalSla = '2. within 48 hrs';
 
         return {
-          province: String(getVal('PROVINCE')).trim(),
-          municipality: String(getVal('MUNICIPALITY')).trim(),
-          facility: String(getVal('FACILITY')).trim(),
-          finalStatus: rawFinalStatus.trim(),
-          napStatus: String(getVal('NAP STATUS')).trim(),
-          rfo: String(getVal('RFO')).trim(),
-          concernGroup: String(getVal('CONCERN GROUP')).trim(),
-          ospTeam: String(getVal('OSP TEAM')).trim(),
-          ospAssigned: String(getVal('OSP ASSIGNED') || getVal('OSP TEAM')).trim(),
-          joNumber: String(getVal('JO')).trim(),
-          etr: String(getVal('ETR')).trim(),
+          province: getVal('PROVINCE') || 'Blank',
+          municipality: getVal('MUNICIPALITY') || '—',
+          facility: getVal('FACILITY') || '—',
+          finalStatus: rawFinalStatus,
+          napStatus: getVal('NAP STATUS') || 'Blank',
+          rfo: getVal('RFO') || 'Blank',
+          concernGroup: getVal('CONCERN GROUP') || 'Blank',
+          ospTeam: getVal('OSP TEAM') || '—',
+          ospAssigned: getVal('OSP ASSIGNED') || getVal('OSP TEAM') || '—',
+          joNumber: getVal('JO') || '—',
+          etr: getVal('ETR') || '—',
           timestamp: timestamp,
           dateEndorsed: dateEndorsed,
           dateRestored: dateRestored,
-          sourceSla: String(getVal('SLA')).trim(),
+          sourceSla: getVal('SLA'),
           operationalSla: operationalSla,
           isOpen: isOpen,
           over48: over48,
