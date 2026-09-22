@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NAP NOC Live Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<style>
+:root{
+  --bg:#07101f;--panel:#0d1728;--panel2:#111d32;--line:#22304a;
+  --text:#e5edf8;--muted:#8ea0bb;
+  --blue:#38bdf8;--red:#fb7185;--amber:#f59e0b;--green:#34d399;--purple:#a78bfa;--slate:#64748b;
+  --shadow:0 12px 30px rgba(0,0,0,.22);
+}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(180deg,#050b16,#091324 50%,#07101f);color:var(--text);
+  font:13px/1.5 Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;min-height:100vh}
+a{color:var(--blue)}
+header{border-bottom:1px solid var(--line);background:rgba(7,16,31,.85);backdrop-filter:blur(6px);position:sticky;top:0;z-index:20}
+.head{max-width:1400px;margin:0 auto;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+h1{margin:0;font-size:17px;letter-spacing:.02em;font-weight:700}
+.subtitle{margin-top:2px;color:var(--muted);font-size:12px}
+.live{display:flex;align-items:center;gap:7px;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--panel2);font-size:11px;font-weight:600;letter-spacing:.03em;color:var(--green);white-space:nowrap}
+.live.bad{color:var(--amber)}
+.live .dot{width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 0 3px color-mix(in srgb, currentColor 25%, transparent);animation:pulse 1.8s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+.wrap{max-width:1400px;margin:0 auto;padding:20px 24px 48px}
+
+.toolbar{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow)}
+.field{display:flex;flex-direction:column;gap:5px;min-width:150px}
+.field label{font-size:10.5px;color:var(--muted);font-weight:600;letter-spacing:.02em}
+select,input[type=text]{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:8px 10px;font:inherit;outline:none}
+select:focus,input[type=text]:focus{border-color:var(--blue)}
+.btn{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:8px 14px;font:inherit;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--blue)}
+.spacer{flex:1}
+.sync{margin-top:10px;color:var(--muted);font-size:11.5px;display:flex;align-items:center;gap:8px}
+.sync a{color:var(--muted);text-decoration:underline}
+
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-top:18px}
+@media (max-width:1100px){.kpis{grid-template-columns:repeat(3,1fr)}}
+@media (max-width:600px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}
+.kpi{padding:14px 16px}
+.kpi .label{color:var(--muted);font-size:11px;font-weight:600;letter-spacing:.02em}
+.kpi .value{font-size:26px;font-weight:700;margin-top:6px;line-height:1}
+.kpi .sub{color:var(--muted);font-size:11px;margin-top:5px}
+.kpi.warn .value{color:var(--amber)}
+.kpi.danger .value{color:var(--red)}
+.kpi.ok .value{color:var(--green)}
+
+.grid2{display:grid;grid-template-columns:1.3fr 1fr;gap:14px;margin-top:14px}
+.grid3{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+@media (max-width:900px){.grid2,.grid3{grid-template-columns:1fr}}
+
+.card h2{margin:0;padding:14px 16px 0;font-size:13.5px;font-weight:700}
+.hint{padding:2px 16px 10px;color:var(--muted);font-size:11px}
+.chart{position:relative;height:230px;padding:6px 14px 16px}
+.chart.small{height:210px}
+
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{position:sticky;top:0;background:var(--panel);text-align:left;color:var(--muted);font-weight:600;font-size:10.5px;letter-spacing:.03em;padding:9px 12px;border-bottom:1px solid var(--line);cursor:pointer;white-space:nowrap}
+thead th:hover{color:var(--text)}
+thead th.sorted{color:var(--blue)}
+tbody td{padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+tbody tr:hover{background:rgba(56,189,248,.05)}
+.tablewrap{max-height:460px;overflow:auto;border-radius:0 0 12px 12px}
+.pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:10.5px;font-weight:700;letter-spacing:.02em}
+.pill.p1{background:rgba(52,211,153,.15);color:var(--green)}
+.pill.p2{background:rgba(245,158,11,.15);color:var(--amber)}
+.pill.p3{background:rgba(251,113,133,.15);color:var(--red)}
+.mono{font-variant-numeric:tabular-nums;color:var(--muted)}
+.empty{padding:40px;text-align:center;color:var(--muted)}
+.tablehead{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;gap:12px;flex-wrap:wrap}
+.count{color:var(--muted);font-size:11.5px}
+footer{max-width:1400px;margin:8px auto 0;padding:0 24px;color:var(--muted);font-size:11px}
+</style>
+</head>
+<body>
+<header>
+  <div class="head">
+    <div>
+      <h1>NAP NOC LIVE MONITORING</h1>
+      <div class="subtitle">Pending outage report • age &amp; SLA exposure • concentration by province • action queue</div>
+    </div>
+    <div id="live" class="live"><span class="dot"></span>CONNECTING</div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="toolbar">
+    <div class="field"><label>Province</label><select id="fProvince"><option value="">All</option></select></div>
+    <div class="field"><label>Root cause (findings)</label><select id="fFindings"><option value="">All</option></select></div>
+    <div class="field"><label>SLA bucket</label>
+      <select id="fSla">
+        <option value="">All</option>
+        <option value="within24">Within 24 hrs</option>
+        <option value="within48">24–48 hrs</option>
+        <option value="over48">Beyond 48 hrs</option>
+      </select>
+    </div>
+    <div class="field" style="min-width:220px"><label>Search (municipality / NAP code)</label><input type="text" id="fSearch" placeholder="e.g. NAGA CITY, DEC001…"></div>
+    <div class="spacer"></div>
+    <button class="btn" id="btnRefresh">Refresh now</button>
+  </div>
+  <div id="sync" class="sync">Connecting to live Google Sheet…</div>
+
+  <section class="kpis">
+    <div class="card kpi"><div class="label">Total pending faults</div><div class="value" id="kTotal">—</div><div class="sub">filtered dataset</div></div>
+    <div class="card kpi danger"><div class="label">Beyond 48 hrs</div><div class="value" id="kOver48">—</div><div class="sub" id="kOver48Pct">—</div></div>
+    <div class="card kpi warn"><div class="label">Oldest open fault</div><div class="value" id="kOldest">—</div><div class="sub">days since endorsement</div></div>
+    <div class="card kpi"><div class="label">Provinces affected</div><div class="value" id="kProvinces">—</div><div class="sub" id="kMunis">—</div></div>
+    <div class="card kpi ok"><div class="label">Within 24 hrs</div><div class="value" id="kFresh">—</div><div class="sub">newly endorsed</div></div>
+    <div class="card kpi"><div class="label">Top root cause</div><div class="value" id="kTopCause" style="font-size:15px">—</div><div class="sub" id="kTopCauseSub">—</div></div>
+  </section>
+
+  <section class="grid2">
+    <div class="card">
+      <h2>Faults endorsed per day</h2>
+      <div class="hint">Count of currently-open faults, grouped by DATE ENDORSED — shows backlog build-up over time, not resolution volume.</div>
+      <div class="chart"><canvas id="trend"></canvas></div>
+    </div>
+    <div class="card">
+      <h2>SLA exposure</h2>
+      <div class="hint">Time elapsed since endorsement, using the sheet's own DURATION value.</div>
+      <div class="chart"><canvas id="slaChart"></canvas></div>
+    </div>
+  </section>
+
+  <section class="grid3">
+    <div class="card">
+      <h2>Open faults by province</h2>
+      <div class="hint">Where the current backlog is concentrated.</div>
+      <div class="chart small"><canvas id="provinceChart"></canvas></div>
+    </div>
+    <div class="card">
+      <h2>Top root causes (findings)</h2>
+      <div class="hint">Most frequent FINDINGS values, top 8 shown.</div>
+      <div class="chart small"><canvas id="findingsChart"></canvas></div>
+    </div>
+  </section>
+
+  <section class="card" style="margin-top:14px">
+    <div class="tablehead">
+      <h2 style="padding:0">Action queue</h2>
+      <div class="count" id="tableCount">—</div>
+    </div>
+    <div class="hint" style="padding-top:0">Sorted by age, oldest first by default. Click a column header to re-sort.</div>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th data-key="province">Province</th>
+            <th data-key="municipality">Municipality</th>
+            <th data-key="barangay">Barangay</th>
+            <th data-key="napCode">NAP code</th>
+            <th data-key="dateEndorsed">Date endorsed</th>
+            <th data-key="hours" class="sorted">Duration</th>
+            <th data-key="findings">Findings</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    Source: <a href="https://docs.google.com/spreadsheets/d/1yhtm8pTJ9VP0TUrFm2JedYoCZ_M22K196luw3u9Xl4s/edit?gid=1995500191#gid=1995500191" target="_blank" rel="noopener">Network Fault Summary Report</a> (live Google Sheet, pending faults only). Auto-refreshes every 30s.
+    This file fetches live data over the network, so open it as a local/hosted HTML file rather than a claude.ai published link — published artifact pages can't reach external sheets.
+  </footer>
+</div>
+
+<script>
+const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1yhtm8pTJ9VP0TUrFm2JedYoCZ_M22K196luw3u9Xl4s/gviz/tq?tqx=out:csv&gid=1995500191';
+const REFRESH_MS = 30000;
+
+let rows = [];
+let filtersBuilt = false;
+let sortKey = 'hours', sortDir = 'desc';
+let charts = {};
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+
+function setLive(text, ok){
+  const el = $('live');
+  el.className = 'live' + (ok ? '' : ' bad');
+  el.innerHTML = '<span class="dot"></span>' + esc(text);
+}
+
+// "9/22/2026 12:09:05" -> Date
+function parseDateEndorsed(s){
+  if(!s) return null;
+  const d = new Date(s.trim());
+  return isNaN(d) ? null : d;
+}
+
+// "5 days 5 hours" -> total hours (float). Falls back to computing from dateEndorsed if unparsable.
+function parseDurationHours(durationStr, dateEndorsed){
+  if(durationStr){
+    const m = durationStr.match(/(\d+)\s*days?\s*(\d+)\s*hours?/i);
+    if(m) return parseInt(m[1],10) * 24 + parseInt(m[2],10);
+  }
+  if(dateEndorsed){
+    return (Date.now() - dateEndorsed.getTime()) / 36e5;
+  }
+  return null;
+}
+
+function fmtDate(d){
+  if(!d) return '—';
+  return d.toLocaleString(undefined,{month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+}
+
+function fmtDuration(hours){
+  if(hours == null || isNaN(hours)) return '—';
+  const days = Math.floor(hours / 24);
+  const hrs = Math.round(hours % 24);
+  if(days <= 0) return hrs + 'h';
+  return days + 'd ' + hrs + 'h';
+}
+
+function slaBucket(hours){
+  if(hours == null) return 'unknown';
+  if(hours > 48) return 'over48';
+  if(hours > 24) return 'within48';
+  return 'within24';
+}
+
+function slaLabel(bucket){
+  return {within24:'Within 24 hrs', within48:'24–48 hrs', over48:'Beyond 48 hrs', unknown:'Unknown'}[bucket] || bucket;
+}
+
+// --- Fetch & parse the live sheet ---
+function fetchSheetData(){
+  setLive('SYNCING', true);
+  Papa.parse(SHEET_CSV_URL + '&_=' + Date.now(), {
+    download: true,
+    header: false,
+    skipEmptyLines: true,
+    complete: function(results){
+      const raw = results.data || [];
+      if(raw.length < 2){
+        $('sync').textContent = 'Sheet returned no data — check that the sheet is shared "Anyone with the link can view".';
+        setLive('ERROR', false);
+        return;
+      }
+
+      // Row 0 is the merged title/header row. Fixed column layout from the sheet:
+      // 4 Province, 5 Municipality, 6 Barangay, 7 NAP Code, 8 Coordinates, 9 Date Endorsed, 10 Duration, 11 Findings
+      const parsed = [];
+      for(let i = 1; i < raw.length; i++){
+        const r = raw[i];
+        const province = (r[4] || '').trim();
+        const dateEndorsedRaw = (r[9] || '').trim();
+        if(!province || !dateEndorsedRaw) continue; // skips blank rows and the trailing total-count row
+
+        const dateEndorsed = parseDateEndorsed(dateEndorsedRaw);
+        const durationRaw = (r[10] || '').trim();
+        const hours = parseDurationHours(durationRaw, dateEndorsed);
+
+        parsed.push({
+          province,
+          municipality: (r[5] || '').trim(),
+          barangay: (r[6] || '').trim(),
+          napCode: (r[7] || '').trim(),
+          coordinates: (r[8] || '').trim(),
+          dateEndorsed,
+          dateEndorsedRaw,
+          durationRaw,
+          hours,
+          sla: slaBucket(hours),
+          findings: (r[11] || '').trim() || 'UNSPECIFIED'
+        });
+      }
+
+      if(parsed.length === 0){
+        $('sync').textContent = 'Connected, but no pending records were found in the expected columns.';
+        setLive('ERROR', false);
+        return;
+      }
+
+      rows = parsed;
+      if(!filtersBuilt){ buildFilters(); filtersBuilt = true; }
+      render();
+      $('sync').innerHTML = 'Connected to live Google Sheet • ' + rows.length.toLocaleString() +
+        ' pending records • last updated ' + new Date().toLocaleTimeString();
+      setLive('LIVE • SYNCED', true);
+    },
+    error: function(err){
+      $('sync').textContent = 'Sync error reaching the Google Sheet: ' + err;
+      setLive('OFFLINE • RETRYING', false);
+    }
+  });
+}
+
+function buildFilters(){
+  const provinces = [...new Set(rows.map(r => r.province))].sort();
+  const findings = [...new Set(rows.map(r => r.findings))].sort();
+  const fillSelect = (id, values) => {
+    const sel = $(id);
+    const current = sel.value;
+    sel.innerHTML = '<option value="">All</option>' + values.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+    if(values.includes(current)) sel.value = current;
+  };
+  fillSelect('fProvince', provinces);
+  fillSelect('fFindings', findings);
+
+  ['fProvince','fFindings','fSla'].forEach(id => $(id).addEventListener('change', render));
+  $('fSearch').addEventListener('input', render);
+  $('btnRefresh').addEventListener('click', fetchSheetData);
+  document.querySelectorAll('thead th[data-key]').forEach(th => {
+    th.addEventListener('click', () => {
+      const key = th.dataset.key;
+      if(sortKey === key) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+      else { sortKey = key; sortDir = 'desc'; }
+      document.querySelectorAll('thead th').forEach(x => x.classList.remove('sorted'));
+      th.classList.add('sorted');
+      render();
+    });
+  });
+}
+
+function applyFilters(){
+  const prov = $('fProvince').value;
+  const find = $('fFindings').value;
+  const sla = $('fSla').value;
+  const q = $('fSearch').value.trim().toLowerCase();
+  return rows.filter(r => {
+    if(prov && r.province !== prov) return false;
+    if(find && r.findings !== find) return false;
+    if(sla && r.sla !== sla) return false;
+    if(q && !(r.municipality.toLowerCase().includes(q) || r.napCode.toLowerCase().includes(q) || r.barangay.toLowerCase().includes(q))) return false;
+    return true;
+  });
+}
+
+function countBy(list, key, top){
+  const m = new Map();
+  list.forEach(r => m.set(r[key], (m.get(r[key]) || 0) + 1));
+  let arr = [...m.entries()].sort((a,b) => b[1]-a[1]);
+  if(top && arr.length > top){
+    const head = arr.slice(0, top - 1);
+    const restCount = arr.slice(top - 1).reduce((s,x) => s + x[1], 0);
+    arr = [...head, ['OTHER', restCount]];
+  }
+  return arr;
+}
+
+function makeChart(id, type, data, extraOptions){
+  const ctx = document.getElementById(id);
+  if(charts[id]) charts[id].destroy();
+  charts[id] = new Chart(ctx, {
+    type, data,
+    options: Object.assign({
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales: type==='doughnut' ? {} : {
+        x:{ticks:{color:'#8ea0bb', font:{size:10}}, grid:{color:'#182740'}},
+        y:{ticks:{color:'#8ea0bb', font:{size:10}}, grid:{color:'#182740'}, beginAtZero:true}
+      }
+    }, extraOptions || {})
+  });
+}
+
+function render(){
+  const f = applyFilters();
+
+  // --- KPIs ---
+  const over48 = f.filter(r => r.sla === 'over48').length;
+  const within24 = f.filter(r => r.sla === 'within24').length;
+  const oldest = f.reduce((max, r) => Math.max(max, (r.hours||0)/24), 0);
+  const provinces = new Set(f.map(r => r.province));
+  const munis = new Set(f.map(r => r.municipality));
+  const topFinding = countBy(f, 'findings')[0];
+
+  $('kTotal').textContent = f.length.toLocaleString();
+  $('kOver48').textContent = over48.toLocaleString();
+  $('kOver48Pct').textContent = f.length ? Math.round(over48/f.length*100) + '% of filtered set' : '—';
+  $('kOldest').textContent = f.length ? Math.floor(oldest) : '—';
+  $('kProvinces').textContent = provinces.size;
+  $('kMunis').textContent = munis.size + ' municipalities';
+  $('kFresh').textContent = within24.toLocaleString();
+  $('kTopCause').textContent = topFinding ? topFinding[0] : '—';
+  $('kTopCauseSub').textContent = topFinding ? topFinding[1] + ' of ' + f.length + ' faults' : '—';
+
+  // --- Trend: faults endorsed per day (last 30 days present in data) ---
+  const byDay = new Map();
+  f.forEach(r => {
+    if(!r.dateEndorsed) return;
+    const key = r.dateEndorsed.toISOString().slice(0,10);
+    byDay.set(key, (byDay.get(key) || 0) + 1);
+  });
+  const days = [...byDay.keys()].sort();
+  makeChart('trend', 'line', {
+    labels: days.map(d => new Date(d+'T00:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric'})),
+    datasets:[{data: days.map(d => byDay.get(d)), borderColor:'#38bdf8', backgroundColor:'rgba(56,189,248,.15)', fill:true, tension:.3, pointRadius:2}]
+  });
+
+  // --- SLA exposure doughnut ---
+  const slaOrder = ['within24','within48','over48'];
+  const slaCounts = slaOrder.map(k => f.filter(r => r.sla === k).length);
+  makeChart('slaChart', 'doughnut', {
+    labels: slaOrder.map(slaLabel),
+    datasets:[{data: slaCounts, backgroundColor:['#34d399','#f59e0b','#fb7185']}]
+  }, {plugins:{legend:{display:true, position:'right', labels:{color:'#cbd5e1', boxWidth:10, font:{size:10}}}}});
+
+  // --- Province bar ---
+  const byProvince = countBy(f, 'province');
+  makeChart('provinceChart', 'bar', {
+    labels: byProvince.map(x => x[0]),
+    datasets:[{data: byProvince.map(x => x[1]), backgroundColor:'#38bdf8', borderRadius:4}]
+  });
+
+  // --- Findings bar ---
+  const byFindings = countBy(f, 'findings', 8);
+  makeChart('findingsChart', 'bar', {
+    labels: byFindings.map(x => x[0]),
+    datasets:[{data: byFindings.map(x => x[1]), backgroundColor:'#a78bfa', borderRadius:4}]
+  }, {indexAxis:'y'});
+
+  // --- Table ---
+  const sorted = [...f].sort((a,b) => {
+    let av = a[sortKey], bv = b[sortKey];
+    if(sortKey === 'dateEndorsed'){ av = a.dateEndorsed ? a.dateEndorsed.getTime() : 0; bv = b.dateEndorsed ? b.dateEndorsed.getTime() : 0; }
+    if(typeof av === 'string') av = av.toLowerCase();
+    if(typeof bv === 'string') bv = bv.toLowerCase();
+    if(av == null) av = -Infinity;
+    if(bv == null) bv = -Infinity;
+    if(av < bv) return sortDir === 'asc' ? -1 : 1;
+    if(av > bv) return sortDir === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  $('tableCount').textContent = sorted.length.toLocaleString() + ' record' + (sorted.length===1?'':'s');
+  const tbody = $('tbody');
+  if(sorted.length === 0){
+    tbody.innerHTML = '<tr><td colspan="7"><div class="empty">No records match the current filters.</div></td></tr>';
+  } else {
+    tbody.innerHTML = sorted.map(r => {
+      const pillClass = r.sla === 'over48' ? 'p3' : (r.sla === 'within48' ? 'p2' : 'p1');
+      return `<tr>
+        <td>${esc(r.province)}</td>
+        <td>${esc(r.municipality)}</td>
+        <td>${esc(r.barangay) || '—'}</td>
+        <td class="mono">${esc(r.napCode)}</td>
+        <td class="mono">${fmtDate(r.dateEndorsed)}</td>
+        <td><span class="pill ${pillClass}">${fmtDuration(r.hours)}</span></td>
+        <td>${esc(r.findings)}</td>
+      </tr>`;
+    }).join('');
+  }
+}
+
+fetchSheetData();
+setInterval(fetchSheetData, REFRESH_MS);
+document.addEventListener('visibilitychange', () => { if(!document.hidden) fetchSheetData(); });
+</script>
+</body>
+</html>
