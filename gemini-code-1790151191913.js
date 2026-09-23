@@ -1,0 +1,289 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import Papa from 'papaparse';
+import { 
+  AlertTriangle, RefreshCw, CheckCircle2, ShieldAlert, 
+  Activity, Clock, Layers, Database 
+} from 'lucide-react';
+
+// Google Sheet CSV Export Endpoint
+const SHEET_ID = '1yhtm8pTJ9VP0TUrFm2JedYoCZ_M22K196luw3u9Xl4s';
+const GID = '946404240';
+const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
+
+// ==========================================
+// AUTONOMOUS DATA CLEANING & REPAIR AGENT
+// ==========================================
+class DataHealthAgent {
+  constructor() {
+    this.logs = [];
+    this.repairedCount = 0;
+  }
+
+  log(level, message, details = null) {
+    this.logs.push({ timestamp: new Date().toISOString(), level, message, details });
+  }
+
+  processAndRepair(rawData) {
+    this.logs = [];
+    this.repairedCount = 0;
+
+    if (!Array.isArray(rawData) || rawData.length === 0) {
+      this.log('ERROR', 'Dataset is empty or malformed.');
+      return { cleanedData: [], metrics: this.getSummary() };
+    }
+
+    const seenNaps = new Set();
+
+    const cleanedData = rawData.map((row, idx) => {
+      let repairedRow = { ...row };
+      let hasIssue = false;
+
+      // Rule 1: Trim and sanitize text fields
+      Object.keys(repairedRow).forEach((key) => {
+        if (typeof repairedRow[key] === 'string') {
+          const original = repairedRow[key];
+          repairedRow[key] = original.trim();
+          if (original !== repairedRow[key]) hasIssue = true;
+        }
+      });
+
+      // Rule 2: Repair Missing / Inconsistent Status Logic
+      const hasRestoredDate = Boolean(repairedRow['DATE RESTORED']);
+      const currentStat = (repairedRow['FINAL STAT'] || '').toUpperCase();
+
+      if (hasRestoredDate && currentStat !== 'RESTORED') {
+        repairedRow['FINAL STAT'] = 'RESTORED';
+        this.log('REPAIR', `Row ${idx + 1}: Fixed invalid status to RESTORED.`);
+        this.repairedCount++;
+      } else if (!hasRestoredDate && !currentStat) {
+        repairedRow['FINAL STAT'] = 'PENDING';
+        this.log('REPAIR', `Row ${idx + 1}: Defaulted empty status to PENDING.`);
+        this.repairedCount++;
+      }
+
+      // Rule 3: Deduplication check on Active NAP Outages
+      const napCode = repairedRow['Facility'] || repairedRow['NAP Code'];
+      if (repairedRow['FINAL STAT'] === 'PENDING' && napCode) {
+        if (seenNaps.has(napCode)) {
+          repairedRow['FINAL STAT'] = 'DUPLICATED';
+          this.log('REPAIR', `Row ${idx + 1}: Flagged duplicate active ticket for NAP ${napCode}.`);
+          this.repairedCount++;
+        } else {
+          seenNaps.add(napCode);
+        }
+      }
+
+      // Rule 4: Timestamp & Ageing Normalization
+      const endorsedDate = new Date(repairedRow['DATE ENDORSED']);
+      if (isNaN(endorsedDate.getTime()) && repairedRow['FINAL STAT'] === 'PENDING') {
+        this.log('WARNING', `Row ${idx + 1}: Invalid 'DATE ENDORSED' timestamp. Core SLA calculation bypassed.`);
+      }
+
+      return repairedRow;
+    });
+
+    this.log('INFO', `Data Agent pipeline completed. Total records processed: ${cleanedData.length}`);
+    return { cleanedData, metrics: this.getSummary() };
+  }
+
+  getSummary() {
+    return {
+      totalLogs: this.logs.length,
+      repairedCount: this.repairedCount,
+      errors: this.logs.filter((l) => l.level === 'ERROR').length,
+      warnings: this.logs.filter((l) => l.level === 'WARNING').length,
+      logs: this.logs,
+    };
+  }
+}
+
+// ==========================================
+// MAIN DASHBOARD COMPONENT
+// ==========================================
+export default function InternalOutageDashboard() {
+  const [data, setData] = useState([]);
+  const [agentSummary, setAgentSummary] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [lastRefreshed, setLastRefreshed] = useState(null);
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [filterProvince, setFilterProvince] = useState('ALL');
+
+  const fetchData = async () => {
+    setLoading(true);
+    Papa.parse(CSV_URL, {
+      download: true,
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        const agent = new DataHealthAgent();
+        const { cleanedData, metrics } = agent.processAndRepair(results.data);
+        setData(cleanedData);
+        setAgentSummary(metrics);
+        setLastRefreshed(new Date());
+        setLoading(false);
+      },
+      error: (err) => {
+        console.error('Data Fetch Error:', err);
+        setLoading(false);
+      },
+    });
+  };
+
+  useEffect(() => {
+    fetchData();
+    let interval;
+    if (autoRefresh) {
+      interval = setInterval(fetchData, 30000); // Auto-refresh every 30 seconds
+    }
+    return () => clearInterval(interval);
+  }, [autoRefresh]);
+
+  // Calculated Metrics (Matching Spreadsheet Logic)
+  const stats = useMemo(() => {
+    const filtered = filterProvince === 'ALL' 
+      ? data 
+      : data.filter(d => (d['Province'] || '').toUpperCase() === filterProvince.toUpperCase());
+
+    const totalNapDown = filtered.filter(d => d['FINAL STAT'] === 'PENDING').length;
+    const totalRestored = filtered.filter(d => d['FINAL STAT'] === 'RESTORED').length;
+    const totalDuplicated = filtered.filter(d => d['FINAL STAT'] === 'DUPLICATED').length;
+    
+    const SLA_Beyond48 = filtered.filter(
+      d => d['FINAL STAT'] === 'PENDING' && (d['SLA'] || '').includes('beyond 48')
+    ).length;
+
+    return { totalNapDown, totalRestored, totalDuplicated, SLA_Beyond48, filtered };
+  }, [data, filterProvince]);
+
+  const provinces = useMemo(() => {
+    const list = Array.from(new Set(data.map(d => d['Province']).filter(Boolean)));
+    return ['ALL', ...list];
+  }, [data]);
+
+  return (
+    <div className="min-h-screen bg-slate-900 text-slate-100 p-6 font-sans">
+      {/* HEADER SECTION */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 border-b border-slate-800 pb-5">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+            <Activity className="text-emerald-400 h-7 w-7" />
+            INTERNAL NAP OUTAGE MONITORING DASHBOARD
+          </h1>
+          <p className="text-slate-400 text-sm mt-1">
+            Real-time operational sync & automated data health validation pipeline
+          </p>
+        </div>
+
+        <div className="flex items-center gap-4 bg-slate-800/80 p-2 rounded-lg border border-slate-700">
+          <div className="flex items-center gap-2 text-xs text-slate-300 px-2">
+            <Clock className="h-4 w-4 text-emerald-400" />
+            <span>Updated: {lastRefreshed ? lastRefreshed.toLocaleTimeString() : 'Syncing...'}</span>
+          </div>
+
+          <button
+            onClick={() => setAutoRefresh(!autoRefresh)}
+            className={`px-3 py-1.5 rounded text-xs font-semibold transition flex items-center gap-1.5 ${
+              autoRefresh 
+                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' 
+                : 'bg-slate-700 text-slate-400'
+            }`}
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+            {autoRefresh ? 'Auto-Refresh ON (30s)' : 'Auto-Refresh OFF'}
+          </button>
+        </div>
+      </div>
+
+      {/* KPI METRICS OVERVIEW */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-8">
+        <div className="bg-slate-800 border-l-4 border-red-500 rounded-lg p-5 shadow-lg">
+          <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Active NAP Down</div>
+          <div className="text-4xl font-extrabold text-white mt-2">{stats.totalNapDown}</div>
+          <p className="text-xs text-slate-400 mt-1">Pending field restoration</p>
+        </div>
+
+        <div className="bg-slate-800 border-l-4 border-amber-500 rounded-lg p-5 shadow-lg">
+          <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">SLA &gt; 48 Hours</div>
+          <div className="text-4xl font-extrabold text-amber-400 mt-2">{stats.SLA_Beyond48}</div>
+          <p className="text-xs text-slate-400 mt-1">Critical restoration delays</p>
+        </div>
+
+        <div className="bg-slate-800 border-l-4 border-emerald-500 rounded-lg p-5 shadow-lg">
+          <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Restored Outages</div>
+          <div className="text-4xl font-extrabold text-emerald-400 mt-2">{stats.totalRestored}</div>
+          <p className="text-xs text-slate-400 mt-1">Completed field tickets</p>
+        </div>
+
+        {/* DATA AGENT STATUS CARD */}
+        <div className="bg-slate-800 border-l-4 border-indigo-500 rounded-lg p-5 shadow-lg">
+          <div className="flex justify-between items-center">
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Data Agent Pipeline</span>
+            <ShieldAlert className="h-4 w-4 text-indigo-400" />
+          </div>
+          <div className="text-2xl font-bold text-indigo-300 mt-2 flex items-center gap-2">
+            <CheckCircle2 className="h-5 w-5 text-emerald-400" /> Active
+          </div>
+          <p className="text-xs text-slate-400 mt-1">
+            Auto-repaired records: <span className="text-white font-bold">{agentSummary?.repairedCount || 0}</span>
+          </p>
+        </div>
+      </div>
+
+      {/* CONTROLS & FILTERS */}
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex items-center gap-3">
+          <label className="text-xs font-semibold text-slate-400">Filter Province:</label>
+          <select 
+            value={filterProvince} 
+            onChange={(e) => setFilterProvince(e.target.value)}
+            className="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          >
+            {provinces.map((prov) => (
+              <option key={prov} value={prov}>{prov}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* DATA TABLE */}
+      <div className="bg-slate-800 border border-slate-700 rounded-lg overflow-hidden shadow-xl">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs text-slate-300">
+            <thead className="bg-slate-900/90 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-700">
+              <tr>
+                <th className="p-3">Province</th>
+                <th className="p-3">Municipality</th>
+                <th className="p-3">Facility / NAP Code</th>
+                <th className="p-3">NAP Status</th>
+                <th className="p-3">Final Stat</th>
+                <th className="p-3">SLA Status</th>
+                <th className="p-3">Ageing</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-700/50">
+              {stats.filtered.slice(0, 15).map((row, i) => (
+                <tr key={i} className="hover:bg-slate-700/30 transition">
+                  <td className="p-3 font-medium text-slate-200">{row['Province'] || 'N/A'}</td>
+                  <td className="p-3">{row['Municipality'] || 'N/A'}</td>
+                  <td className="p-3 font-mono text-indigo-300">{row['Facility'] || row['NAP Code'] || 'N/A'}</td>
+                  <td className="p-3">{row['NAP Status'] || 'N/A'}</td>
+                  <td className="p-3">
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                      row['FINAL STAT'] === 'PENDING' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
+                      row['FINAL STAT'] === 'RESTORED' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                      'bg-slate-700 text-slate-400'
+                    }`}>
+                      {row['FINAL STAT']}
+                    </span>
+                  </td>
+                  <td className="p-3">{row['SLA'] || 'N/A'}</td>
+                  <td className="p-3 font-mono">{row['AGEING'] || 'N/A'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
