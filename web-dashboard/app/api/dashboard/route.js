@@ -1,7 +1,7 @@
 import {NextResponse} from 'next/server';
 export const dynamic='force-dynamic'; export const revalidate=0;
 const SHEET_ID=process.env.GOOGLE_SHEET_ID||'1yhtm8pTJ9VP0TUrFm2JedYoCZ_M22K196luw3u9Xl4s';
-const GID=process.env.GOOGLE_SHEET_GID||'1995500191';
+const GID=process.env.GOOGLE_SHEET_GID||'946404240';
 const aliases={timestamp:['timestamp','date/time','datetime'],concern:['concern group','concern_group','concern'],province:['province'],municipality:['municipality','city/municipality','city'],facility:['facility'],restored:['date restored','restored date'],status:['final status','final_status','status'],rfo:['rfo','ops team','team','assigned team'],endorsed:['date endorsed','endorsed date'],ageing:['ageing','aging'],sla:['sla','sla status']};
 const norm=s=>String(s??'').trim().toLowerCase().replace(/\s+/g,' ');
 function headers(h){const n=h.map(norm),o={};for(const[k,a]of Object.entries(aliases))o[k]=n.findIndex(x=>a.includes(x));return o}
