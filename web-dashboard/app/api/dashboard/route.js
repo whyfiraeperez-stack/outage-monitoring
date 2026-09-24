@@ -7,17 +7,17 @@ const SHEET_ID='1yhtm8pTJ9VP0TUrFm2JedYoCZ_M22K196luw3u9Xl4s';
 const GID='1995500191';
 
 const aliases={
- timestamp:['timestamp','date/time','datetime'],
+ timestamp:['timestamp','date/time','datetime','date time'],
  concern:['concern group','concern_group','concern'],
- province:['province'],
+ province:['province','prov'],
  municipality:['municipality','city/municipality','city'],
- facility:['facility'],
- restored:['date restored','restored date'],
- status:['final status','final_status','status'],
- rfo:['rfo','ops team','team','assigned team'],
- endorsed:['date endorsed','endorsed date'],
- ageing:['ageing','aging'],
- sla:['sla','sla status']
+ facility:['facility','site','location'],
+ restored:['date restored','restored date','date restored'],
+ status:['final status','final_status','status','nap status'],
+ rfo:['rfo','ops team','team','assigned team','ops_team'],
+ endorsed:['date endorsed','endorsed date','endorsement date'],
+ ageing:['ageing','aging','ageing (days)','ageing days'],
+ sla:['sla','sla status','sla category','sla classification']
 };
 
 const norm=s=>String(s??'')
@@ -33,8 +33,8 @@ const cleanText=s=>String(s??'')
 
 function normalizeStatus(s){
  const v=cleanText(s).toUpperCase();
- if(v==='PENDING') return 'PENDING';
- if(v==='RESTORED') return 'RESTORED';
+ if(v==='PENDING'||v==='OPEN'||v==='ONGOING'||v==='FOR ACTION') return 'PENDING';
+ if(v==='RESTORED'||v==='RESOLVED') return 'RESTORED';
  if(v==='DUPLICATED'||v==='DUPLICATE') return 'DUPLICATED';
  if(v==='CLOSED') return 'CLOSED';
  return v||'UNKNOWN';
@@ -44,6 +44,23 @@ function headers(h){
  const n=h.map(norm),o={};
  for(const[k,a]of Object.entries(aliases)) o[k]=n.findIndex(x=>a.includes(x));
  return o;
+}
+
+function scoreHeader(row){
+ const n=row.map(norm);
+ let score=0;
+ for(const a of Object.values(aliases)) if(n.some(x=>a.includes(x))) score++;
+ return score;
+}
+
+function findHeader(raw){
+ let best=-1,bestScore=0;
+ const limit=Math.min(raw.length,60);
+ for(let i=0;i<limit;i++){
+  const s=scoreHeader(raw[i]||[]);
+  if(s>bestScore){bestScore=s;best=i}
+ }
+ return best>=0?best:0;
 }
 
 function csv(text){
@@ -72,12 +89,17 @@ function dt(v){
 }
 
 function clean(raw){
- if(!raw.length)return {rows:[],quality:{issues:0,sourceRows:0,parsedRows:0,droppedRows:0,rawPendingCount:0,rawStatusCounts:{}}};
+ if(!raw.length)return {rows:[],quality:{issues:0,sourceRows:0,parsedRows:0,droppedRows:0,rawPendingCount:0,rawStatusCounts:{},headerRow:0,headerScore:0,headerMap:{},agent:{status:'ERROR',issues:1,checks:[]}}};
 
- const headerIndex=raw.findIndex(r=>r.some(x=>norm(x)==='final status'));
- const h=headerIndex>=0?raw[headerIndex]:raw[0];
+ const headerIndex=findHeader(raw);
+ const h=raw[headerIndex]||[];
  const c=headers(h), out=[], issues=[], rawStatusCounts={};
  let droppedRows=0;
+ const missingFields=Object.entries(c).filter(([,idx])=>idx<0).map(([k])=>k);
+ if(c.status<0) issues.push('No status column was detected in the NAP DOWN header.');
+ if(c.province<0) issues.push('No province column was detected in the NAP DOWN header.');
+ if(c.concern<0) issues.push('No concern group column was detected in the NAP DOWN header.');
+ if(c.rfo<0) issues.push('No RFO/Ops Team column was detected in the NAP DOWN header.');
 
  for(let i=headerIndex+1;i<raw.length;i++){
   const r=raw[i];
@@ -95,7 +117,7 @@ function clean(raw){
   const rawAge=c.ageing>=0?cleanText(r[c.ageing]):'';
 
   let hours=null;
-  const m=rawAge.match(/(\d+(?:\.\d+)?)/);
+  const m=rawAge.match(/(-?\d+(?:\.\d+)?)/);
   if(m) hours=Number(m[1])*24;
   else if(start) hours=((status==='RESTORED'&&restored?restored:new Date())-start)/3600000;
 
@@ -106,8 +128,11 @@ function clean(raw){
   else if(sla.includes('24'))sla='1. within 24 hrs';
 
   const open=!['RESTORED','DUPLICATED','CLOSED'].includes(status);
+  const formulaExpectedSla=hours==null?'Unknown':hours<=24?'1. within 24 hrs':hours<=48?'2. within 48 hrs':'3. beyond 48 hrs';
+
   if(!start)issues.push('Missing endorsement/timestamp source row '+(i+1));
   if(status==='UNKNOWN')issues.push('Missing/unrecognized final status source row '+(i+1));
+  if(sla!=='Unknown'&&formulaExpectedSla!==sla)issues.push('SLA/formula mismatch source row '+(i+1));
 
   out.push({
    sourceRow:i+1,province,concern,rfo,status,sla,open,
@@ -117,6 +142,14 @@ function clean(raw){
   });
  }
 
+ const formulaMismatches=issues.filter(x=>x.startsWith('SLA/formula mismatch')).length;
+ const unknownStatuses=rawStatusCounts.UNKNOWN||0;
+ const checks=[
+  {name:'Header mapping',status:missingFields.length?'WARN':'OK',detail:missingFields.length?'Missing: '+missingFields.join(', '):'All dashboard fields mapped'},
+  {name:'Status normalization',status:unknownStatuses?'WARN':'OK',detail:unknownStatuses?unknownStatuses+' rows have unknown status':'All statuses recognized'},
+  {name:'SLA formula parity',status:formulaMismatches?'WARN':'OK',detail:formulaMismatches?formulaMismatches+' rows differ from elapsed-time SLA rule':'Values match dashboard SLA rule'},
+  {name:'Row parsing',status:droppedRows?'WARN':'OK',detail:droppedRows?droppedRows+' blank rows skipped':'No blank source rows skipped'}
+ ];
  const sourceRows=Math.max(0,raw.length-(headerIndex+1));
  return {
   rows:out,
@@ -127,16 +160,18 @@ function clean(raw){
    parsedRows:out.length,
    droppedRows,
    headerRow:headerIndex+1,
+   headerScore:scoreHeader(h),
+   headerMap:c,
+   missingFields,
    rawPendingCount:rawStatusCounts.PENDING||0,
-   rawStatusCounts
+   rawStatusCounts,
+   agent:{status:checks.some(x=>x.status==='WARN')?'WARN':'OK',issues:issues.length,checks}
   }
  };
 }
 
 export async function GET(){
  try{
-  // Use the native CSV export instead of GViz query output. This reads the full DATABASE tab
-  // and avoids query-layer filtering/truncation when reconciling the source row count.
   const u='https://docs.google.com/spreadsheets/d/'+encodeURIComponent(SHEET_ID)+'/export?format=csv&gid='+encodeURIComponent(GID)+'&cachebust='+Date.now();
   const r=await fetch(u,{cache:'no-store',headers:{'Cache-Control':'no-cache'}});
   if(!r.ok)throw new Error('Google Sheets returned HTTP '+r.status);
@@ -152,7 +187,8 @@ export async function GET(){
    options:{province:unique('province'),status:unique('status'),rfo:unique('rfo'),concern:unique('concern')},
    quality:d.quality,
    statusCounts,
-   fetchedAt:new Date().toISOString()
+   fetchedAt:new Date().toISOString(),
+   source:{sheetId:SHEET_ID,gid:GID,name:'NAP DOWN'}
   });
  }catch(e){
   return NextResponse.json({error:e.message},{status:500});
