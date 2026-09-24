@@ -3,8 +3,8 @@ import {NextResponse} from 'next/server';
 export const dynamic='force-dynamic';
 export const revalidate=0;
 
-const SHEET_ID=process.env.GOOGLE_SHEET_ID||'1yhtm8pTJ9VP0TUrFm2JedYoCZ_M22K196luw3u9Xl4s';
-const GID=process.env.GOOGLE_SHEET_GID||'946404240';
+const SHEET_ID='1yhtm8pTJ9VP0TUrFm2JedYoCZ_M22K196luw3u9Xl4s';
+const GID='1995500191';
 
 const aliases={
  timestamp:['timestamp','date/time','datetime'],
