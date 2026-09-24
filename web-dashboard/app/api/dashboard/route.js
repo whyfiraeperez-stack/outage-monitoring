@@ -28,7 +28,7 @@ const norm=s=>String(s??'')
 const cleanText=s=>String(s??'')
  .replace(/\u00a0/g,' ')
  .replace(/[\u2000-\u200b\u202f\u205f\u3000]/g,' ')
- .replace(/[\\t\\r\\n]+/g,' ')
+ .replace(/[\t\r\n]+/g,' ')
  .trim().replace(/\s+/g,' ');
 
 function normalizeStatus(s){
@@ -72,7 +72,8 @@ function dt(v){
 }
 
 function clean(raw){
- if(!raw.length)return {rows:[],quality:{issues:0,sourceRows:0,parsedRows:0,droppedRows:0,pendingSource:0}};
+ if(!raw.length)return {rows:[],quality:{issues:0,sourceRows:0,parsedRows:0,droppedRows:0,rawPendingCount:0,rawStatusCounts:{}}};
+
  const headerIndex=raw.findIndex(r=>r.some(x=>norm(x)==='final status'));
  const h=headerIndex>=0?raw[headerIndex]:raw[0];
  const c=headers(h), out=[], issues=[], rawStatusCounts={};
@@ -116,7 +117,7 @@ function clean(raw){
   });
  }
 
- const sourceRows=raw.length-(headerIndex+1);
+ const sourceRows=Math.max(0,raw.length-(headerIndex+1));
  return {
   rows:out,
   quality:{
@@ -126,6 +127,7 @@ function clean(raw){
    parsedRows:out.length,
    droppedRows,
    headerRow:headerIndex+1,
+   rawPendingCount:rawStatusCounts.PENDING||0,
    rawStatusCounts
   }
  };
@@ -133,14 +135,18 @@ function clean(raw){
 
 export async function GET(){
  try{
-  const u='https://docs.google.com/spreadsheets/d/'+encodeURIComponent(SHEET_ID)+'/gviz/tq?tqx=out:csv&gid='+encodeURIComponent(GID)+'&cachebust='+Date.now();
+  // Use the native CSV export instead of GViz query output. This reads the full DATABASE tab
+  // and avoids query-layer filtering/truncation when reconciling the source row count.
+  const u='https://docs.google.com/spreadsheets/d/'+encodeURIComponent(SHEET_ID)+'/export?format=csv&gid='+encodeURIComponent(GID)+'&cachebust='+Date.now();
   const r=await fetch(u,{cache:'no-store',headers:{'Cache-Control':'no-cache'}});
   if(!r.ok)throw new Error('Google Sheets returned HTTP '+r.status);
   const t=await r.text();
   if(t.includes('<html'))throw new Error('Google Sheets did not return CSV. Check sheet access/sharing.');
+
   const d=clean(csv(t));
   const unique=k=>[...new Set(d.rows.map(x=>x[k]).filter(Boolean))].sort();
   const statusCounts=d.rows.reduce((a,x)=>(a[x.status]=(a[x.status]||0)+1,a),{});
+
   return NextResponse.json({
    rows:d.rows,
    options:{province:unique('province'),status:unique('status'),rfo:unique('rfo'),concern:unique('concern')},
