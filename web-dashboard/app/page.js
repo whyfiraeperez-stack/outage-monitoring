@@ -8,7 +8,7 @@ function Card({title,value,note,accent}){return <div className="card" style={{'-
 function Panel({title,subtitle,children}){return <section className="panel"><div className="panel-head"><h2>{title}</h2><p>{subtitle}</p></div>{children}</section>}
 function Donut({data,colors}){return <div className="chart-wrap"><ResponsiveContainer width="100%" height={230}><PieChart><Pie data={data} dataKey="value" nameKey="name" innerRadius={62} outerRadius={88} paddingAngle={2}>{data.map((_,i)=><Cell key={i} fill={colors[i%colors.length]}/>)}</Pie><Tooltip contentStyle={{background:'#0c1628',border:'1px solid #23334f'}}/></PieChart></ResponsiveContainer><div className="legend">{data.map((x,i)=><div key={x.name}><i style={{background:colors[i%colors.length]}}/>{x.name}<b>{fmt(x.value)}</b></div>)}</div></div>}
 export default function Dashboard(){
- const [p,setP]=useState(null),[f,setF]=useState({province:'All',status:'All',rfo:'All',concern:'All',view:'All records'}),[last,setLast]=useState(null),[error,setError]=useState('');
+ const [p,setP]=useState(null),[f,setF]=useState({province:'All',status:'All',rfo:'All',concern:'All'}),[last,setLast]=useState(null),[error,setError]=useState('');
  async function load(){try{const r=await fetch('/api/dashboard?ts='+Date.now(),{cache:'no-store'}),j=await r.json();if(!r.ok)throw new Error(j.error);setP(j);setLast(new Date());setError('')}catch(e){setError(e.message)}}
  useEffect(()=>{load();const id=setInterval(load,REFRESH_MS);return()=>clearInterval(id)},[]);
  const rows=useMemo(()=>p?.rows.filter(r=>(f.province==='All'||r.province===f.province)&&(f.status==='All'||r.status===f.status)&&(f.rfo==='All'||r.rfo===f.rfo)&&(f.concern==='All'||r.concern===f.concern))||[],[p,f]);
