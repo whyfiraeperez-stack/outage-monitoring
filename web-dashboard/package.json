@@ -1,1 +1,1 @@
-{"name":"nap-noc-live-monitoring","private":true,"version":"1.0.0","scripts":{"dev":"next dev","build":"next build","start":"next start"},"dependencies":{"next":"14.2.15","react":"18.3.1","react-dom":"18.3.1","recharts":"2.13.3"}}
+{"name":"nap-noc-live-monitoring","private":true,"version":"1.2.0","scripts":{"dev":"next dev","build":"next build","start":"next start","agent:setup":"npx plugins add vercel/vercel-plugin"},"dependencies":{"googleapis":"^160.0.0","next":"14.2.15","react":"18.3.1","react-dom":"18.3.1","recharts":"2.13.3"}}
