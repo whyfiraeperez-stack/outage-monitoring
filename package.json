@@ -1,1 +1,1 @@
-{"name":"nap-noc-static-vercel","private":true,"version":"3.0.0","scripts":{"agent:setup":"npx plugins add vercel/vercel-plugin"},"dependencies":{"googleapis":"^160.0.0"}}
+{"name":"nap-noc-static-vercel","private":true,"version":"3.0.1","scripts":{"build":"node -e \"console.log('NAP NOC static build ready')\"","start":"node -e \"console.log('Static Vercel deployment')\"","agent:setup":"npx plugins add vercel/vercel-plugin"},"dependencies":{"googleapis":"^160.0.0"}}
