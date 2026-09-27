@@ -31,6 +31,7 @@ const durationHours = (start, end) => {
   return Math.max(0, (b.getTime() - a.getTime()) / 36e5);
 };
 const sla = h => h == null ? 'Unknown' : h <= 24 ? '1. within 24 hrs' : h <= 48 ? '2. within 48 hrs' : '3. beyond 48 hrs';
+
 const headers = (row, aliases) => {
   const h = row.map(x => norm(x));
   const o = {};
@@ -40,36 +41,60 @@ const headers = (row, aliases) => {
 const key = (...v) => v.map(x => norm(x)).filter(Boolean).join('|');
 
 const DB = {
-  timestamp:['TIMESTAMP'], concern:['CONCERN GROUP','CONCERN'], province:['PROVINCE'],
-  municipality:['MUNICIPALITY'], barangay:['BARANGAY'], facility:['FACILITY'],
-  napStatus:['NAP STATUS'], restored:['DATE RESTORED'], status:['STATUS','FINAL STATUS'],
-  rfo:['RFO'], osp:['OSP TEAM'], endorsed:['DATE ENDORSED'], etr:['ETR'], jo:['JO NUMBER'], sla:['SLA']
+  timestamp:['TIMESTAMP'],
+  concern:['CONCERN GROUP','CONCERN'],
+  province:['PROVINCE'],
+  municipality:['MUNICIPALITY'],
+  barangay:['BARANGAY'],
+  facility:['FACILITY'],
+  napStatus:['NAP STATUS'],
+  restored:['DATE RESTORED'],
+  rawStatus:['STATUS'],
+  finalStatus:['FINAL STATUS'],
+  rfo:['RFO'],
+  osp:['OSP TEAM'],
+  endorsed:['DATE ENDORSED'],
+  etr:['ETR'],
+  jo:['JO NUMBER'],
+  sla:['SLA']
 };
+
 const NAP = {
-  province:['PROVINCE'], municipality:['MUNICIPALITY'], barangay:['BARANGAY'],
-  napCode:['NAP CODE','NAPCODE'], coordinates:['COORDINATES','FACILITY COORDINATES'],
-  endorsed:['DATE ENDORSED','ENDORSED DATE'], duration:['DURATION','AGEING','AGING'],
-  finding:['FINDINGS','FINDING'], status:['FINAL STATUS','STATUS']
+  province:['PROVINCE'],
+  municipality:['MUNICIPALITY'],
+  barangay:['BARANGAY'],
+  napCode:['NAP CODE','NAPCODE'],
+  coordinates:['COORDINATES','FACILITY COORDINATES'],
+  endorsed:['DATE ENDORSED','ENDORSED DATE'],
+  duration:['DURATION','AGEING','AGING'],
+  finding:['FINDINGS','FINDING'],
+  status:['FINAL STATUS','STATUS']
 };
 
 function parseDatabase(values) {
   if (!values.length) return { rows: [], issues:['DATABASE returned no rows'] };
   const h = headers(values[0], DB);
   const rows = [];
+
   for (let i=1; i<values.length; i++) {
     const r = values[i] || [];
     if (!r.some(v => clean(v) !== '')) continue;
 
-    const status = clean(r[h.status] ?? '');
+    const rawStatus = clean(r[h.rawStatus] ?? '');
+    const finalSource = clean(r[h.finalStatus] ?? '');
+
+    // IMPORTANT:
+    // The workbook's NOC summary is driven by FINAL STATUS.
+    // STATUS is retained as rawStatus and is used only as fallback when FINAL STATUS is blank.
+    const finalStatus = finalSource || rawStatus;
+
     const endorsed = parseDate(r[h.endorsed] ?? '') || parseDate(r[h.timestamp] ?? '');
     const restored = parseDate(r[h.restored] ?? '');
 
-    // Correct source-equivalent duration:
-    // restored -> DATE RESTORED - DATE ENDORSED
-    // active   -> now - DATE ENDORSED
-    const down = endorsed
-      ? (restored ? durationHours(endorsed, restored) : elapsedHours(endorsed))
-      : null;
+    // Source-compatible timing:
+    // restored row -> DATE RESTORED - DATE ENDORSED
+    // active row   -> NOW - DATE ENDORSED
+    const down = endorsed ? (restored ? durationHours(endorsed, restored) : elapsedHours(endorsed)) : null;
     const up = restored ? elapsedHours(restored) : null;
 
     const facility = clean(r[h.facility] ?? '');
@@ -83,7 +108,9 @@ function parseDatabase(values) {
       municipality:clean(r[h.municipality] ?? ''),
       barangay:clean(r[h.barangay] ?? ''),
       facility,
-      napCode:facility,
+      // DATABASE itself does not contain the dedicated NAP Code field shown on NAP DOWN.
+      // Keep facility separate; NAP DOWN rows supply the authoritative NAP Code.
+      napCode:'',
       napStatus,
       finding:napStatus,
       rfo:clean(r[h.rfo] ?? ''),
@@ -92,11 +119,13 @@ function parseDatabase(values) {
       etr:clean(r[h.etr] ?? ''),
       dateEndorsed:iso(endorsed),
       dateRestored:iso(restored),
-      status,
-      finalStatus:status,
-      open:Boolean(status) && !TERMINAL.has(norm(status)),
-      restored:status === 'RESTORED',
-      napDown:status === 'PENDING',
+      rawStatus,
+      finalStatus,
+      // UI status is the same status used by the workbook dashboard logic.
+      status:finalStatus,
+      open:Boolean(finalStatus) && !TERMINAL.has(norm(finalStatus)),
+      restored:finalStatus === 'RESTORED',
+      napDown:finalStatus === 'PENDING',
       downHours:down,
       upHours:up,
       operationalSla:sla(down),
@@ -104,6 +133,7 @@ function parseDatabase(values) {
       key:key(facility, r[h.province], r[h.municipality])
     });
   }
+
   return { rows, issues:[], header:h };
 }
 
@@ -122,6 +152,7 @@ function parseDurationHours(text) {
 
 function parseNapDown(values) {
   if (!values.length) return { rows: [], issues:['NAP DOWN returned no rows'] };
+
   const h = headers(values[0], NAP);
   const rows = [];
 
@@ -134,6 +165,7 @@ function parseNapDown(values) {
       province:clean(r[h.province] ?? ''),
       municipality:clean(r[h.municipality] ?? ''),
       barangay:clean(r[h.barangay] ?? ''),
+      // This is the authoritative NAP Code field shown in the NAP DOWN sheet screenshot.
       napCode:clean(r[h.napCode] ?? ''),
       coordinates:clean(r[h.coordinates] ?? ''),
       dateEndorsed:iso(r[h.endorsed] ?? ''),
@@ -143,37 +175,40 @@ function parseNapDown(values) {
       key:key(r[h.napCode] ?? '', r[h.province] ?? '', r[h.municipality] ?? '')
     });
   }
+
   return { rows, issues:[], header:h };
 }
 
 export function buildSnapshot(dbTab, napTab, version, sourceMode) {
   const db = parseDatabase(dbTab.values || []);
   const nap = parseNapDown(napTab.values || []);
-  const map = new Map();
 
+  const map = new Map();
   for (const r of db.rows) {
-    if (r.key && !map.has(r.key)) map.set(r.key, r);
+    // Enrichment key for active/pending records that don't have NAP Code in DATABASE.
+    const k = key(r.facility, r.province, r.municipality);
+    if (k && !map.has(k)) map.set(k, r);
   }
 
   const napDownRows = nap.rows.map(n => {
+    const candidates = db.rows.filter(x =>
+      x.province === n.province &&
+      x.municipality === n.municipality
+    );
+
+    const nDate = n.dateEndorsed?.slice(0,10) || '';
     const d =
-      map.get(n.key) ||
-      [...map.values()].find(
-        x =>
-          x.province === n.province &&
-          x.municipality === n.municipality &&
-          x.dateEndorsed?.slice(0,10) === n.dateEndorsed?.slice(0,10)
-      );
+      map.get(key(n.napCode, n.province, n.municipality)) ||
+      candidates.find(x => x.dateEndorsed?.slice(0,10) === nDate) ||
+      candidates[0];
 
     const endorsed = d?.dateEndorsed || n.dateEndorsed;
     const restored = d?.dateRestored || '';
+    const finalStatus = d?.finalStatus || n.status || 'PENDING';
 
-    const down =
-      endorsed
-        ? (restored
-            ? durationHours(endorsed, restored)
-            : elapsedHours(endorsed))
-        : parseDurationHours(n.duration);
+    const down = endorsed
+      ? (restored ? durationHours(endorsed, restored) : elapsedHours(endorsed))
+      : parseDurationHours(n.duration);
 
     const up = restored ? elapsedHours(restored) : null;
 
@@ -189,26 +224,28 @@ export function buildSnapshot(dbTab, napTab, version, sourceMode) {
       downHours:down,
       upHours:up,
       operationalSla:sla(down),
-      open:d?.open ?? (norm(n.status) === 'PENDING'),
+      open:!TERMINAL.has(norm(finalStatus)),
       finding:n.finding || d?.finding || d?.napStatus || 'Blank',
-      status:d?.status || n.status || 'PENDING'
+      status:finalStatus
     };
   });
 
   const statusCounts = {};
   for (const r of db.rows) {
-    statusCounts[r.status || 'BLANK'] = (statusCounts[r.status || 'BLANK'] || 0) + 1;
+    const s = r.finalStatus || 'BLANK';
+    statusCounts[s] = (statusCounts[s] || 0) + 1;
   }
 
   const options = {
     province:[...new Set(db.rows.map(r => r.province).filter(Boolean))].sort(),
     status:Object.keys(statusCounts).sort(),
     rfo:[...new Set(db.rows.map(r => r.rfo).filter(Boolean))].sort(),
-    finding:[...new Set(db.rows.map(r => r.finding).filter(Boolean))].sort(),
+    finding:[...new Set(db.rows.map(r => r.finding).filter(Boolean).concat(napDownRows.map(r=>r.finding).filter(Boolean)))].sort(),
     concern:[...new Set(db.rows.map(r => r.concern).filter(Boolean))].sort()
   };
 
   const pendingCount = statusCounts.PENDING || 0;
+  const napDownSheetCount = napDownRows.length;
 
   return {
     ok:true,
@@ -218,13 +255,16 @@ export function buildSnapshot(dbTab, napTab, version, sourceMode) {
     napDownRows,
     statusCounts,
     pendingCount,
+    napDownSheetCount,
+    pendingReconciliation:pendingCount === napDownSheetCount,
     options,
     quality:{
       sourceRows:db.rows.length,
       parsedRows:db.rows.length,
       droppedRows:0,
       rawPendingCount:pendingCount,
-      napDownRows:napDownRows.length,
+      napDownRows:napDownSheetCount,
+      discrepancy:pendingCount-napDownSheetCount,
       issues:[...db.issues, ...nap.issues].length
     },
     sourceMode
