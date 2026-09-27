@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NAP NOC Live Monitoring</title>
+<style>
+:root{--bg:#f5f7fa;--card:#fff;--line:#dfe5ec;--text:#15202b;--muted:#667586;--navy:#0f2744;--red:#c43d4f;--amber:#b26b00;--green:#197a52;--blue:#1269b0;--purple:#6f50b4}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font:13px/1.45 Inter,Arial,sans-serif}body{padding:18px}main{max-width:1600px;margin:auto}
+.top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:4px 0 14px}.brand{display:flex;gap:12px;align-items:flex-start}.mark{width:4px;height:36px;background:var(--navy);border-radius:4px}.top h1{margin:0;font-size:20px;letter-spacing:.2px}.top p{margin:4px 0 0;color:var(--muted);font-size:10px}.live{padding:6px 10px;border-radius:16px;border:1px solid #c9eadb;background:#eefaf4;color:var(--green);font-size:10px;font-weight:800;white-space:nowrap}.live i{display:inline-block;width:7px;height:7px;border-radius:50%;background:#32a46d;margin-right:6px}
+.alert{display:none;padding:8px 10px;border:1px solid #f0c8ce;background:#fff1f3;color:#8b2637;border-radius:7px;font-size:10px;margin-bottom:9px}.info{display:none;padding:8px 10px;border:1px solid #d7e4f0;background:#f1f7fc;color:#245273;border-radius:7px;font-size:10px;margin-bottom:9px}
+.filters{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;background:var(--card);border:1px solid var(--line);border-radius:9px;padding:10px}.filter span{display:block;color:#6d7987;font-size:8px;font-weight:800;letter-spacing:.6px;margin-bottom:4px}.filter select{width:100%;height:31px;border:1px solid #cfd7e1;background:#fff;color:#1d2936;border-radius:6px;padding:0 8px;font-size:10px}
+.meta{font-size:9px;color:var(--muted);padding:7px 2px}.meta b{color:#293847}
+.kpis{display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr 1fr;gap:9px}.kpi{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:11px 12px;min-height:96px}.kpi.primary{border-top:3px solid var(--red)}.kpi.open{border-top:3px solid var(--amber)}.kpi.restore{border-top:3px solid var(--green)}.kpi.blue{border-top:3px solid var(--blue)}.kpi.purple{border-top:3px solid var(--purple)}.k-label{font-size:8px;color:#74808e;font-weight:800;letter-spacing:.7px}.k-value{font-size:29px;font-weight:850;line-height:1.1;margin-top:7px}.k-note{font-size:9px;color:var(--muted);margin-top:5px}
+.status{display:flex;gap:6px;flex-wrap:wrap;margin:9px 0}.pill{display:flex;gap:6px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:999px;padding:5px 8px;font-size:8px;color:#536172}.pill i{width:7px;height:7px;border-radius:50%}.pill b{color:#1f2d3c}
+.grid{display:grid;gap:9px;margin-top:9px}.two{grid-template-columns:1.45fr 1fr}.three{grid-template-columns:1fr 1fr 1fr}.panel{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:10px;min-width:0}.panel h2{font-size:12px;margin:0}.panel p{font-size:9px;color:var(--muted);margin:3px 0 7px}.chart{height:240px;position:relative}
+.agent{display:flex;justify-content:space-between;gap:14px;align-items:center;margin-top:9px;background:#f8fafc;border:1px solid var(--line);border-radius:9px;padding:9px 10px}.agent strong{font-size:9px;letter-spacing:.6px}.agent span{margin-left:8px;font-size:8px;padding:3px 6px;border-radius:9px}.ready{background:#eaf8f0;color:var(--green)}.need{background:#fff4df;color:#8c5c00}.actions{display:flex;gap:6px}.actions button{border:1px solid #cfd7e1;background:#fff;border-radius:6px;padding:6px 9px;font-size:9px;font-weight:700;color:#334252;cursor:pointer}.actions button:hover{background:#f2f6fa}.agent-note{font-size:8px;color:var(--muted);margin-top:4px}
+.table-wrap{margin-top:9px;overflow:auto;max-height:500px;border:1px solid var(--line);border-radius:7px}.table-wrap table{width:100%;min-width:1450px;border-collapse:collapse}.table-wrap th,.table-wrap td{padding:7px 8px;border-bottom:1px solid #edf0f4;white-space:nowrap;text-align:left}.table-wrap th{position:sticky;top:0;background:#f8fafc;color:#6d7885;font-size:8px;text-transform:uppercase;z-index:2}.table-wrap td{font-size:9px}.badge{padding:2px 6px;border-radius:999px;font-size:8px;font-weight:800}.pending{background:#fff0f2;color:#a62f40}.other{background:#fff6e8;color:#895800}
+footer{display:flex;justify-content:space-between;gap:12px;color:#7a8795;font-size:8px;padding:9px 1px}
+@media(max-width:1050px){.kpis{grid-template-columns:repeat(3,1fr)}.two,.three{grid-template-columns:1fr}.filters{grid-template-columns:repeat(3,1fr)}}@media(max-width:680px){body{padding:9px}.top{display:block}.live{display:inline-block;margin-top:8px}.filters{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}.agent{display:block}.actions{margin-top:7px}}
+</style>
+</head>
+<body>
+<main>
+<header class="top">
+<div class="brand"><div class="mark"></div><div><h1>NAP NOC LIVE MONITORING</h1><p>Clean operational view • FINAL STATUS source • NAP DOWN reconciliation • fast Google Sheets sync</p></div></div>
+<div class="live"><i></i><span id="live">LIVE • CONNECTING</span></div>
+</header>
+
+<div id="alert" class="alert"></div>
+<div id="info" class="info"></div>
+
+<div class="filters">
+<label class="filter"><span>PROVINCE</span><select id="province"><option>All</option></select></label>
+<label class="filter"><span>STATUS</span><select id="status"><option>All</option></select></label>
+<label class="filter"><span>FINDINGS / NAP STATUS</span><select id="finding"><option>All</option></select></label>
+<label class="filter"><span>RFO</span><select id="rfo"><option>All</option></select></label>
+<label class="filter"><span>CONCERN GROUP</span><select id="concern"><option>All</option></select></label>
+</div>
+<div class="meta" id="meta">Connecting…</div>
+
+<div class="kpis">
+<div class="kpi primary"><div class="k-label">NAP DOWN / PENDING</div><div class="k-value" id="pending">—</div><div class="k-note">authoritative NAP DOWN tab</div></div>
+<div class="kpi open"><div class="k-label">OPEN / ACTIONABLE</div><div class="k-value" id="open">—</div><div class="k-note">FINAL STATUS non-terminal</div></div>
+<div class="kpi primary"><div class="k-label">OPEN &gt;48 HOURS</div><div class="k-value" id="over48">—</div><div class="k-note">live elapsed downtime</div></div>
+<div class="kpi restore"><div class="k-label">RESTORED</div><div class="k-value" id="restored">—</div><div class="k-note">FINAL STATUS = RESTORED</div></div>
+<div class="kpi blue"><div class="k-label">DATABASE ROWS</div><div class="k-value" id="rows">—</div><div class="k-note">current source</div></div>
+</div>
+
+<div class="status" id="statusPills"></div>
+
+<div class="grid two">
+<section class="panel"><h2>Incident trend</h2><p>Endorsed incidents over the latest 31 dates</p><div class="chart"><canvas id="trend"></canvas></div></section>
+<section class="panel"><h2>Final status distribution</h2><p>All DATABASE statuses</p><div class="chart"><canvas id="statusChart"></canvas></div></section>
+</div>
+
+<div class="grid three">
+<section class="panel"><h2>NAP DOWN by province</h2><p>PENDING only • authoritative NAP DOWN tab</p><div class="chart"><canvas id="provinceChart"></canvas></div></section>
+<section class="panel"><h2>Top findings</h2><p>NAP DOWN cases</p><div class="chart"><canvas id="findingChart"></canvas></div></section>
+<section class="panel"><h2>Average downtime</h2><p>NAP DOWN cases • days</p><div class="chart"><canvas id="downChart"></canvas></div></section>
+</div>
+
+<section class="agent">
+<div><strong>FORMULA / DATA-QUALITY AGENT</strong><span id="agentBadge" class="need">CONFIG NEEDED</span><div class="agent-note">Audits actual live formulas and can repair approved derived-column gaps. Raw incident fields stay protected.</div></div>
+<div class="actions"><button id="audit">Audit formulas</button><button id="repair">Repair safe gaps</button></div>
+</section>
+
+<section class="panel" style="margin-top:9px">
+<h2>NAP DOWN action queue</h2><p>Province • Municipality • Barangay • NAP Code • Findings • RFO • Down Time • Up Time • OSP • ETR</p>
+<div class="table-wrap"><table><thead><tr><th>Down Time</th><th>Status</th><th>Province</th><th>Municipality</th><th>Barangay</th><th>NAP Code</th><th>Findings</th><th>RFO</th><th>Up Time</th><th>OSP</th><th>Endorsed</th><th>Restored</th><th>ETR</th></tr></thead><tbody id="queue"></tbody></table></div>
+</section>
+<footer><span id="foot">NAP DOWN and DATABASE PENDING reconcile when both are live.</span><span>Fast check: 3s • full sync only when source version changes</span></footer>
+</main>
+
+<script>
+const REFRESH=3000;let S={snap:null,version:'',sync:null,charts:{}};
+const $=id=>document.getElementById(id),fmt=n=>new Intl.NumberFormat('en-US').format(Number(n)||0);
+const dt=v=>{const d=new Date(v||'');return Number.isNaN(d.getTime())?null:d};
+const hrs=(v,now=Date.now())=>{const d=dt(v);return d?Math.max(0,(now-d.getTime())/36e5):null};
+const dur=h=>{if(h==null)return'—';const d=Math.floor(h/24),r=Math.floor(h%24),m=Math.floor((h%1)*60);return d?d+'d '+r+'h':r?r+'h '+m+'m':m+'m'};
+const uniq=a=>[...new Set(a.filter(Boolean).map(String))].sort();
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function setAlert(t){$('alert').style.display=t?'block':'none';$('alert').textContent=t||''}
+function setInfo(t){$('info').style.display=t?'block':'none';$('info').textContent=t||''}
+function fill(id,arr){const e=$(id),old=e.value;const vals=uniq(arr);e.innerHTML='<option>All</option>'+vals.map(v=>'<option>'+esc(v)+'</option>').join('');if(vals.includes(old))e.value=old}
+function getFiltered(){const p=S.snap||{},f={province:$('province').value,status:$('status').value,finding:$('finding').value,rfo:$('rfo').value,concern:$('concern').value};return (p.rows||[]).filter(r=>(f.province==='All'||r.province===f.province)&&(f.status==='All'||r.finalStatus===f.status)&&(f.finding==='All'||r.finding===f.finding)&&(f.rfo==='All'||r.rfo===f.rfo)&&(f.concern==='All'||r.concern===f.concern))}
+function chart(id,type,data,options={}){if(S.charts[id])S.charts[id].destroy();S.charts[id]=new Chart($(id),{type,data,options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#51606f',font:{size:8}}}},scales:{x:{ticks:{color:'#667586',font:{size:8}},grid:{color:'#edf0f4'}},y:{ticks:{color:'#667586',font:{size:8}},grid:{color:'#edf0f4'},beginAtZero:true}},...options}})}
+function render(){
+ const p=S.snap||{},rows=p.rows||[],pending=p.napDownRows||[],open=rows.filter(r=>r.open),restored=rows.filter(r=>r.finalStatus==='RESTORED'),over=open.filter(r=>(hrs(r.dateEndorsed)||0)>48);
+ $('pending').textContent=fmt(pending.length);$('open').textContent=fmt(open.length);$('over48').textContent=fmt(over.length);$('restored').textContent=fmt(restored.length);$('rows').textContent=fmt(rows.length);
+ fill('province',p.options?.province||[]);fill('status',p.options?.status||[]);fill('finding',p.options?.finding||[]);fill('rfo',p.options?.rfo||[]);fill('concern',p.options?.concern||[]);
+ $('meta').innerHTML='Version: <b>'+esc(p.version||'—')+'</b> • DB PENDING: <b>'+fmt(p.pendingCount)+'</b> • NAP DOWN rows: <b>'+fmt(p.napDownSheetCount)+'</b> • Reconciliation: <b>'+(p.pendingReconciliation?'MATCH':'MISMATCH')+'</b> • Source: '+esc(p.sourceMode||'—')+' • Last sync: '+(S.sync?S.sync.toLocaleTimeString():'—');
+ if(p.sourceMode!=='google-sheets-api')setInfo('Published CSV fallback is active. It can lag behind the live spreadsheet. Configure the Google Sheets service-account variables in Vercel for direct live synchronization.');
+ else setInfo('');
+ const colors=['#274c77','#5b8e7d','#9a7fbe','#4c97bb','#d49a27','#c55a66','#7198c4','#8f99a8','#c47bc8','#7d6bb4','#5ea88b','#d07272'];
+ const sc=Object.entries(p.statusCounts||{}).sort((a,b)=>b[1]-a[1]).map(([name,value])=>({name,value}));$('statusPills').innerHTML=sc.map((x,i)=>'<div class="pill"><i style="background:'+colors[i%colors.length]+'"></i>'+esc(x.name)+' <b>'+fmt(x.value)+'</b></div>').join('');
+ const frows=getFiltered();const tm={};for(const r of frows){const d=dt(r.dateEndorsed);if(d){const k=d.toISOString().slice(0,10);tm[k]=(tm[k]||0)+1}}const tr=Object.keys(tm).sort().slice(-31);chart('trend','line',{labels:tr,datasets:[{data:tr.map(k=>tm[k]),borderColor:'#1769aa',backgroundColor:'rgba(23,105,170,.08)',fill:true,tension:.25,pointRadius:1,borderWidth:2}]});
+ chart('statusChart','doughnut',{labels:sc.map(x=>x.name),datasets:[{data:sc.map(x=>x.value),backgroundColor:colors}]},{plugins:{legend:{position:'right'}}});
+ const pm={};for(const r of pending)pm[r.province]=(pm[r.province]||0)+1;const pv=Object.entries(pm).sort((a,b)=>b[1]-a[1]);chart('provinceChart','bar',{labels:pv.map(x=>x[0]),datasets:[{data:pv.map(x=>x[1]),backgroundColor:'#3f8fbf',borderRadius:3}]},{indexAxis:'y'});
+ const fm={};for(const r of pending){const k=r.finding||'Blank';fm[k]=(fm[k]||0)+1}const fv=Object.entries(fm).sort((a,b)=>b[1]-a[1]).slice(0,10);chart('findingChart','bar',{labels:fv.map(x=>x[0]),datasets:[{data:fv.map(x=>x[1]),backgroundColor:'#8d74c9',borderRadius:3}]},{indexAxis:'y'});
+ const sums={},cnt={};for(const r of pending){const h=r.downHours??hrs(r.dateEndorsed);if(h!=null){sums[r.province]=(sums[r.province]||0)+h;cnt[r.province]=(cnt[r.province]||0)+1}}const dv=Object.entries(sums).map(([n,v])=>[n,Number((v/(cnt[n]||1)/24).toFixed(1))]).sort((a,b)=>b[1]-a[1]);chart('downChart','bar',{labels:dv.map(x=>x[0]),datasets:[{data:dv.map(x=>x[1]),backgroundColor:'#c86c77',borderRadius:3}]},{indexAxis:'y',plugins:{tooltip:{callbacks:{label:x=>x.raw+' days'}}}});
+ const q=[...pending].sort((a,b)=>(b.downHours||0)-(a.downHours||0));$('queue').innerHTML=q.slice(0,600).map(r=>'<tr><td>'+dur(r.downHours??hrs(r.dateEndorsed))+'</td><td><span class="badge '+(r.status==='PENDING'?'pending':'other')+'">'+esc(r.status||'—')+'</span></td><td>'+esc(r.province||'—')+'</td><td>'+esc(r.municipality||'—')+'</td><td>'+esc(r.barangay||'—')+'</td><td>'+esc(r.napCode||'—')+'</td><td>'+esc(r.finding||'—')+'</td><td>'+esc(r.rfo||'—')+'</td><td>'+(r.dateRestored?dur(r.upHours??hrs(r.dateRestored)):'DOWN')+'</td><td>'+esc(r.ospTeam||'—')+'</td><td>'+esc(r.dateEndorsed?new Date(r.dateEndorsed).toLocaleString():'—')+'</td><td>'+esc(r.dateRestored?new Date(r.dateRestored).toLocaleString():'—')+'</td><td>'+esc(r.etr||'—')+'</td></tr>').join('');
+ $('live').textContent='LIVE • '+(S.sync?S.sync.toLocaleTimeString():'CONNECTED');
+ $('foot').textContent='NAP DOWN = FINAL STATUS/PUBLISHED NAP DOWN reconciliation • '+(p.pendingReconciliation?'matched':'source discrepancy detected')+'.';
+}
+async function json(url,opt){const r=await fetch(url,opt);const j=await r.json();if(!r.ok||j.ok===false)throw new Error(j.error||'HTTP '+r.status);return j}
+async function snap(v){const j=await json('/api/snapshot?version='+encodeURIComponent(v||'')+'&ts='+Date.now(),{cache:'no-store'});S.snap=j;S.version=j.version||v;S.sync=new Date();render()}
+async function check(){try{const m=await json('/api/meta?ts='+Date.now(),{cache:'no-store'});$('agentBadge').textContent=m.agent?.configured?'READY':'CONFIG NEEDED';$('agentBadge').className=m.agent?.configured?'ready':'need';if(!S.version||m.version!==S.version)await snap(m.version);else{S.sync=new Date();$('live').textContent='LIVE • '+S.sync.toLocaleTimeString()}setAlert('')}catch(e){setAlert(e.message)}}
+async function agent(action){const token=prompt('NOC_AGENT_TOKEN');if(!token)return;try{const j=await json('/api/agent',{method:'POST',headers:{'Content-Type':'application/json','x-noc-agent-token':token},body:JSON.stringify({action})});alert(action==='audit'?'Formula audit completed: '+(j.issues?.length||0)+' issues.':'Repair completed: '+(j.repairedRuns||0)+' runs.');await check()}catch(e){alert(e.message)}}
+['province','status','finding','rfo','concern'].forEach(id=>$(id).addEventListener('change',render));$('audit').onclick=()=>agent('audit');$('repair').onclick=()=>agent('repair');check();setInterval(()=>{if(!document.hidden)check()},REFRESH);document.addEventListener('visibilitychange',()=>{if(!document.hidden)check()});
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</body>
+</html>
