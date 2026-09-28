@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>NAP NOC Live Monitoring</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" onload="window.dispatchEvent(new Event('chartlibready'))" onerror="this.onerror=null;this.src='https://unpkg.com/chart.js@4.4.4/dist/chart.umd.min.js'"></script>
 <style>
 :root{--bg:#f4f7fa;--card:#fff;--line:#d9e1e9;--text:#142131;--muted:#687789;--navy:#143554;--red:#c83d50;--amber:#b26b00;--green:#187b52;--blue:#1769aa;--purple:#7654b7}
 *{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font:13px/1.45 Inter,Arial,sans-serif}body{padding:14px}main{max-width:1700px;margin:auto}
@@ -134,7 +134,17 @@ function syncOptions(){
 function getFilteredDb(){return (S.snap?.rows||[]).filter(r=>matchRow(r,true))}
 function getFilteredNap(){return (S.snap?.napDownRows||[]).filter(r=>matchRow(r,true))}
 function getTodayDb(){const fDate=S.filters.period;return (S.snap?.rows||[]).filter(r=>matchBase(r)&&periodMatch(r.dateEndorsed,'TODAY'))}
-function chart(id,type,data,options={}){if(S.charts[id])S.charts[id].destroy();S.charts[id]=new Chart($(id),{type,data,options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{labels:{color:'#51606f',font:{size:8}}}},scales:{x:{ticks:{color:'#667586',font:{size:8}},grid:{color:'#edf0f4'}},y:{ticks:{color:'#667586',font:{size:8}},grid:{color:'#edf0f4'},beginAtZero:true}},...options}})}
+function chart(id,type,data,options={}){
+  try{
+    if(!window.Chart){setInfo('Live data is active. Charts are waiting for the chart library to load.');return}
+    const canvas=$(id);if(!canvas)return;
+    if(S.charts[id])S.charts[id].destroy();
+    S.charts[id]=new Chart(canvas,{type,data,options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{labels:{color:'#51606f',font:{size:8}}}},scales:{x:{ticks:{color:'#667586',font:{size:8}},grid:{color:'#edf0f4'}},y:{ticks:{color:'#667586',font:{size:8}},grid:{color:'#edf0f4'},beginAtZero:true}},...options}});
+  }catch(e){
+    console.warn('Chart render skipped',id,e);
+    if(!S.chartErrorShown){S.chartErrorShown=true;setInfo('Live data is active. One or more charts could not render and were skipped.')}
+  }
+}
 function median(a){if(!a.length)return null;const s=[...a].sort((x,y)=>x-y),m=Math.floor(s.length/2);return s.length%2?s[m]:(s[m-1]+s[m])/2}
 function bucket(h){if(h==null)return 'Unknown';if(h<=24)return '<=24h';if(h<=48)return '24–48h';if(h<=168)return '2–7d';return '>7d'}
 function render(){
@@ -400,7 +410,7 @@ async function check(){
 async function agent(action){const token=prompt('NOC_AGENT_TOKEN');if(!token)return;try{const j=await json('/api/agent',{method:'POST',headers:{'Content-Type':'application/json','x-noc-agent-token':token},body:JSON.stringify({action})});alert(action==='audit'?'Formula audit completed: '+(j.issues?.length||0)+' issues.':'Repair completed: '+(j.repairedRuns||0)+' runs.');await check()}catch(e){alert(e.message)}}
 ['province','status','finding','rfo','concern','period'].forEach(id=>$(id).addEventListener('change',()=>{S.filters[id]=$(id).value;render()}));
 $('audit').onclick=()=>agent('audit');$('repair').onclick=()=>agent('repair');
-check();setInterval(()=>{if(!document.hidden)check()},REFRESH);document.addEventListener('visibilitychange',()=>{if(!document.hidden)check()});
+window.addEventListener('chartlibready',()=>{if(S.snap)render()});check();setInterval(()=>{if(!document.hidden)check()},REFRESH);document.addEventListener('visibilitychange',()=>{if(!document.hidden)check()});
 </script>
 </body>
 </html>
