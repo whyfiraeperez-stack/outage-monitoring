@@ -17,5 +17,24 @@ async function version(){if(configured()){const {sheets}=await clients();const r
 function csv(t){const o=[];let row=[],cell='',q=false;for(let i=0;i<t.length;i++){const c=t[i],n=t[i+1];if(c==='"'&&q&&n==='"'){cell+='"';i++;continue}if(c==='"'){q=!q;continue}if(c===','&&!q){row.push(cell);cell='';continue}if((c==='\n'||c==='\r')&&!q){if(c==='\r'&&n==='\n')i++;row.push(cell);cell='';if(row.some(v=>String(v).trim()!==''))o.push(row);row=[];continue}cell+=c}if(cell!==''||row.length){row.push(cell);if(row.some(v=>String(v).trim()!==''))o.push(row)}return o}
 function good(rows,expected){if(!rows?.length)return false;const h=(rows[0]||[]).map(v=>String(v||'').trim().toUpperCase());return expected.every(x=>h.includes(x.toUpperCase()))}
 async function published(gid,kind){const urls=kind==='db'?['https://docs.google.com/spreadsheets/d/e/'+CFG.publishedId+'/pub?output=csv&cachebust='+Date.now(),'https://docs.google.com/spreadsheets/d/e/'+CFG.publishedId+'/pub?gid='+gid+'&single=true&output=csv&cachebust='+Date.now(),'https://docs.google.com/spreadsheets/d/e/'+CFG.publishedId+'/gviz/tq?tqx=out:csv&gid='+gid+'&cachebust='+Date.now()]:['https://docs.google.com/spreadsheets/d/e/'+CFG.publishedId+'/pub?gid='+gid+'&single=true&output=csv&cachebust='+Date.now(),'https://docs.google.com/spreadsheets/d/e/'+CFG.publishedId+'/gviz/tq?tqx=out:csv&gid='+gid+'&cachebust='+Date.now()];const expected=kind==='db'?['TIMESTAMP','FINAL STATUS','PROVINCE']:['PROVINCE','MUNICIPALITY'];let last='';for(const u of urls)try{const r=await fetch(u,{cache:'no-store'});if(!r.ok){last='HTTP '+r.status;continue}const t=await r.text();if(/<html|<!doctype/i.test(t)){last='HTML response';continue}const rows=csv(t);if(good(rows,expected))return{properties:{sheetId:Number(gid),title:kind==='db'?'PUBLISHED DATABASE':'PUBLISHED NAP DOWN'},values:rows};last='Unexpected headers'}catch(e){last=e.message}throw new Error('Published '+kind+' feed unavailable: '+last)}
-async function source(gid,kind){return configured()?values(gid):published(gid,kind)}
+async function source(gid,kind){
+  if(configured()){
+    try{
+      return await values(gid);
+    }catch(primary){
+      try{
+        const fallback=await published(gid,kind);
+        fallback.recoveredFromApiError=true;
+        fallback.primaryError=String(primary?.message||primary);
+        return fallback;
+      }catch(fallback){
+        const e=new Error('Google Sheets API failed and published fallback failed: '+String(primary?.message||primary));
+        e.primaryError=String(primary?.message||primary);
+        e.fallbackError=String(fallback?.message||fallback);
+        throw e;
+      }
+    }
+  }
+  return published(gid,kind);
+}
 module.exports={CFG,configured,credentialDiagnostics,parseServiceAccount,clients,tabs,tab,values,published,source,version};
