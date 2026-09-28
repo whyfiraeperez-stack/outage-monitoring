@@ -54,11 +54,19 @@ async function sample(gid){
 }
 async function version(){
   if(configured()){
+    const {sheets}=await clients();
+    const meta=await sheets.spreadsheets.get({
+      spreadsheetId:CFG.sheetId,
+      includeGridData:false,
+      fields:'spreadsheetId,sheets(properties(sheetId,title,gridProperties(rowCount,columnCount)))'
+    });
+    const etag=meta.headers?.etag||meta.headers?.ETag;
+    if(etag)return 'etag-'+String(etag);
     const s=await sample(CFG.dbGid);
     const rows=s.values||[];
     const head=JSON.stringify(rows.slice(0,12));
     const tail=JSON.stringify(rows.slice(Math.max(0,rows.length-3)));
-    return 'sheet-'+Buffer.from(head+tail+'|'+Date.now().toString().slice(0,0)).toString('base64').slice(0,80);
+    return 'sheet-'+Buffer.from(head+tail).toString('base64').slice(0,80);
   }
   return 'published-'+Math.floor(Date.now()/10000);
 }
