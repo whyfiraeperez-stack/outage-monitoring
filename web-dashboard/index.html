@@ -188,10 +188,155 @@ function render(){
  $('live').textContent='LIVE • '+(S.sync?S.sync.toLocaleTimeString():'CONNECTED');
  $('foot').textContent='All charts, KPIs and queue use the same active Province / Status / Finding / RFO / Concern / Date filter.';
 }
+
+const PUBLIC_SHEET_ID='2PACX-1vSKPMOn6CXZN3xn1zyKGcDyayAHLMuntjJ137x5dWxZzoJstX3Ef_XTtAgh6zId4n1gEyQBeL91lHFi';
+const PUBLIC_GID_DB='946404240';
+const PUBLIC_GID_NAP='1995500191';
+
+function csvRows(text){
+  const out=[];let row=[],cell='',q=false;
+  for(let i=0;i<text.length;i++){
+    const ch=text[i],n=text[i+1];
+    if(ch==='"'&&q&&n==='"'){cell+='"';i++;continue}
+    if(ch==='"'){q=!q;continue}
+    if(ch===','&&!q){row.push(cell);cell='';continue}
+    if((ch==='\\n'||ch==='\\r')&&!q){
+      if(ch==='\\r'&&n==='\\n')i++;
+      row.push(cell);cell='';
+      if(row.some(v=>String(v).trim()!==''))out.push(row);
+      row=[];continue;
+    }
+    cell+=ch;
+  }
+  if(cell!==''||row.length){row.push(cell);if(row.some(v=>String(v).trim()!==''))out.push(row)}
+  return out;
+}
+async function browserPublishedCsv(gid){
+  const urls=[
+    'https://docs.google.com/spreadsheets/d/e/'+PUBLIC_SHEET_ID+'/gviz/tq?tqx=out:csv&gid='+gid+'&_='+Date.now(),
+    'https://docs.google.com/spreadsheets/d/e/'+PUBLIC_SHEET_ID+'/pub?gid='+gid+'&single=true&output=csv&_='+Date.now()
+  ];
+  let last='';
+  for(const u of urls){
+    try{
+      const r=await fetch(u,{cache:'no-store',mode:'cors'});
+      if(!r.ok){last='HTTP '+r.status;continue}
+      const t=await r.text();
+      if(/<html|<!doctype/i.test(t)){last='HTML response';continue}
+      const rows=csvRows(t);
+      if(rows.length>1)return rows;
+      last='empty CSV';
+    }catch(e){last=e.message}
+  }
+  throw new Error('Public Google Sheets feed unavailable: '+last);
+}
+function headerRowFrom(rows,required){
+  let best=-1,score=-1;
+  for(let i=0;i<Math.min(rows.length,50);i++){
+    const h=(rows[i]||[]).map(x=>String(x??'').trim().toUpperCase());
+    let s=required.filter(x=>h.includes(x)).length;
+    if(s>score){score=s;best=i}
+  }
+  return score>=2?best:-1;
+}
+function colIndex(headers,aliases){
+  const h=headers.map(x=>String(x??'').trim().toUpperCase());
+  for(const a of aliases){const i=h.indexOf(a);if(i>=0)return i}
+  return -1;
+}
+function browserIso(v){
+  const d=dt(v);return d?d.toISOString():'';
+}
+function parseDbBrowser(rows){
+  const hi=headerRowFrom(rows,['TIMESTAMP','PROVINCE','MUNICIPALITY','FINAL STATUS','DATE ENDORSED']);
+  if(hi<0)throw new Error('Could not find DATABASE header row in published sheet');
+  const h=rows[hi]||[];
+  const c={
+    timestamp:colIndex(h,['TIMESTAMP']),
+    concern:colIndex(h,['CONCERN GROUP','CONCERN']),
+    province:colIndex(h,['PROVINCE']),
+    municipality:colIndex(h,['MUNICIPALITY','CITY/MUNICIPALITY','CITY']),
+    barangay:colIndex(h,['BARANGAY']),
+    facility:colIndex(h,['FACILITY']),
+    napStatus:colIndex(h,['NAP STATUS','NAP_STATUS']),
+    restored:colIndex(h,['DATE RESTORED','RESTORED DATE']),
+    rawStatus:colIndex(h,['STATUS']),
+    finalStatus:colIndex(h,['FINAL STATUS','FINAL STAT','FINAL_STATUS']),
+    rfo:colIndex(h,['RFO']),
+    osp:colIndex(h,['OSP TEAM','OPS TEAM']),
+    endorsed:colIndex(h,['DATE ENDORSED','ENDORSED DATE']),
+    etr:colIndex(h,['ETR']),
+    jo:colIndex(h,['JO NUMBER']),
+    sla:colIndex(h,['SLA','SLA STATUS'])
+  };
+  const rowsOut=[];
+  for(let i=hi+1;i<rows.length;i++){
+    const r=rows[i]||[];if(!r.some(v=>String(v??'').trim()))continue;
+    const raw=String(c.rawStatus>=0?r[c.rawStatus]:'').trim();
+    const fs=String(c.finalStatus>=0?r[c.finalStatus]:'').trim();
+    const status=fs||raw;
+    const end=dt(c.endorsed>=0?r[c.endorsed]:'')||dt(c.timestamp>=0?r[c.timestamp]:'');
+    const rest=dt(c.restored>=0?r[c.restored]:'');
+    const down=end?(rest?Math.max(0,(rest-end)/36e5):hrs(end)):null;
+    const up=rest?hrs(rest):null;
+    const facility=String(c.facility>=0?r[c.facility]:'').trim();
+    const napStatus=String(c.napStatus>=0?r[c.napStatus]:'').trim();
+    rowsOut.push({
+      rowNumber:i+1,timestamp:browserIso(r[c.timestamp]),concern:String(c.concern>=0?r[c.concern]:'').trim(),
+      province:String(c.province>=0?r[c.province]:'').trim(),municipality:String(c.municipality>=0?r[c.municipality]:'').trim(),
+      barangay:String(c.barangay>=0?r[c.barangay]:'').trim(),facility,napCode:'',
+      napStatus,finding:napStatus,rfo:String(c.rfo>=0?r[c.rfo]:'').trim(),ospTeam:String(c.osp>=0?r[c.osp]:'').trim(),
+      joNumber:String(c.jo>=0?r[c.jo]:'').trim(),etr:String(c.etr>=0?r[c.etr]:'').trim(),dateEndorsed:browserIso(end),
+      dateRestored:browserIso(rest),rawStatus:raw,finalStatus:status,status,
+      open:Boolean(status)&&!new Set(['RESTORED','DUPLICATED','NO PROBLEM WHEN CHECKED','DISREGARD','DUPLICATE ENTRY','CANCELLED','CLOSED']).has(String(status).trim().toUpperCase()),
+      restored:String(status).toUpperCase()==='RESTORED',downHours:down,upHours:up,
+      operationalSla:down==null?'Unknown':down<=24?'1. within 24 hrs':down<=48?'2. within 48 hrs':'3. beyond 48 hrs',
+      sourceSla:String(c.sla>=0?r[c.sla]:'').trim()
+    });
+  }
+  return rowsOut;
+}
+function parseNapBrowser(rows){
+  const hi=headerRowFrom(rows,['PROVINCE','MUNICIPALITY','NAP CODE','FINDINGS']);
+  if(hi<0)throw new Error('Could not find NAP DOWN header row in published sheet');
+  const h=rows[hi];
+  const c={province:colIndex(h,['PROVINCE']),municipality:colIndex(h,['MUNICIPALITY']),barangay:colIndex(h,['BARANGAY']),napCode:colIndex(h,['NAP CODE','NAPCODE']),coords:colIndex(h,['COORDINATES','FACILITY COORDINATES']),endorsed:colIndex(h,['DATE ENDORSED','ENDORSED DATE']),duration:colIndex(h,['DURATION','AGEING','AGING']),finding:colIndex(h,['FINDINGS','FINDING']),status:colIndex(h,['FINAL STATUS','FINAL STAT','STATUS'])};
+  const out=[];
+  for(let i=hi+1;i<rows.length;i++){
+    const r=rows[i]||[];if(!r.some(v=>String(v??'').trim()))continue;
+    out.push({sourceRow:i+1,province:String(c.province>=0?r[c.province]:'').trim(),municipality:String(c.municipality>=0?r[c.municipality]:'').trim(),barangay:String(c.barangay>=0?r[c.barangay]:'').trim(),napCode:String(c.napCode>=0?r[c.napCode]:'').trim(),coordinates:String(c.coords>=0?r[c.coords]:'').trim(),dateEndorsed:browserIso(r[c.endorsed]),duration:String(c.duration>=0?r[c.duration]:'').trim(),finding:String(c.finding>=0?r[c.finding]:'').trim(),status:String(c.status>=0?r[c.status]:'').trim()||'PENDING'});
+  }
+  return out;
+}
+async function browserRecoverySnapshot(){
+  const dbRaw=await browserPublishedCsv(PUBLIC_GID_DB);
+  const napRaw=await browserPublishedCsv(PUBLIC_GID_NAP).catch(()=>[]);
+  const db=parseDbBrowser(dbRaw);
+  let nap=parseNapBrowser(napRaw);
+  let fallback=false;
+  if(!nap.length){
+    fallback=true;
+    nap=db.filter(r=>String(r.finalStatus||'').toUpperCase()==='PENDING').map(r=>({sourceRow:r.rowNumber,province:r.province,municipality:r.municipality,barangay:r.barangay,napCode:r.napCode,coordinates:'',dateEndorsed:r.dateEndorsed,duration:'',finding:r.finding||r.napStatus||'Blank',status:'PENDING'}));
+  }
+  const byArea={};
+  db.forEach(r=>{const k=(r.province+'|'+r.municipality).toUpperCase();(byArea[k]||(byArea[k]=[])).push(r)});
+  const napRows=nap.map(n=>{
+    const cs=byArea[(n.province+'|'+n.municipality).toUpperCase()]||[];
+    const match=cs.find(x=>x.dateEndorsed&&n.dateEndorsed&&x.dateEndorsed.slice(0,10)===n.dateEndorsed.slice(0,10))||cs.find(x=>String(x.finalStatus||'').toUpperCase()==='PENDING')||cs[0];
+    const restored=match?.dateRestored||'';
+    const down=match?.downHours??(match?.dateEndorsed&&n.duration?null:null);
+    const status=match?.finalStatus||n.status||'PENDING';
+    return {...n,concern:match?.concern||'Unspecified',rfo:match?.rfo||'',ospTeam:match?.ospTeam||'',etr:match?.etr||'',dateEndorsed:match?.dateEndorsed||n.dateEndorsed,dateRestored:restored,downHours:down,upHours:match?.upHours??(restored?hrs(restored):null),finding:n.finding||match?.finding||match?.napStatus||'Blank',status,finalStatus:status,open:status.toUpperCase()!=='RESTORED'};
+  });
+  const statusCounts={};db.forEach(r=>{const s=r.finalStatus||'BLANK';statusCounts[s]=(statusCounts[s]||0)+1});
+  const options={province:uniq(db.map(r=>r.province)),status:uniq(Object.keys(statusCounts)),finding:uniq(db.map(r=>r.finding).concat(napRows.map(r=>r.finding))),rfo:uniq(db.map(r=>r.rfo)),concern:uniq(db.map(r=>r.concern))};
+  return {ok:true,version:'browser-published-'+Date.now(),sourceMode:'browser-published-recovery',rows:db,napDownRows:napRows,statusCounts,pendingCount:statusCounts.PENDING||0,napDownSheetCount:napRows.length,pendingReconciliation:(statusCounts.PENDING||0)===napRows.length,napFallback:fallback,options,diagnostics:{browserRecovery:true,databaseRows:db.length,napRows:napRows.length}};
+}
+
 async function json(url,opt){const r=await fetch(url,opt);const j=await r.json().catch(()=>({ok:false,error:'Invalid server response'}));if(!r.ok||j.ok===false)throw new Error(j.error||'HTTP '+r.status);return j}
 async function recover(reason){try{await fetch('/api/agent?reason='+encodeURIComponent(reason||'runtime'),{cache:'no-store'}).catch(()=>{});await new Promise(r=>setTimeout(r,400));}catch(_){}} 
-async function snap(v){let last;for(let i=0;i<4;i++){try{const j=await json('/api/snapshot?version='+encodeURIComponent(v||'')+'&ts='+Date.now(),{cache:'no-store'});S.snap=j;S.version=j.version||v;S.sync=new Date();render();return}catch(e){last=e;await recover(e.message);await new Promise(r=>setTimeout(r,600*(i+1)))}}throw last}
-async function check(){let last;for(let i=0;i<4;i++){try{const m=await json('/api/meta?ts='+Date.now(),{cache:'no-store'});$('agentBadge').textContent=m.agent?.configured?'READY':'CONFIG NEEDED';$('agentBadge').className=m.agent?.configured?'ready':'need';if(m.sourceMode==='google-sheets-api-error'||m.sourceMode==='unavailable'){const e=m.diagnostics?.apiError||m.diagnostics?.error||'Google Sheets source unavailable';setAlert(e)}else if(m.diagnostics?.sheet){setInfo('Google Sheets API reachable • '+(m.diagnostics.sheet.title||'DATABASE')+' • '+fmt(m.diagnostics.sheet.rowCount)+' rows detected.')}if(!S.version||m.version!==S.version)await snap(m.version);else{S.sync=new Date();$('live').textContent='LIVE • '+S.sync.toLocaleTimeString()}if(m.sourceMode!=='google-sheets-api-error')setAlert('');return}catch(e){last=e;await recover(e.message);await new Promise(r=>setTimeout(r,600*(i+1)))}}setAlert('Auto-recovery exhausted: '+(last?.message||'source unavailable'))}
+async function snap(v){let last;for(let i=0;i<4;i++){try{const j=await json('/api/snapshot?version='+encodeURIComponent(v||'')+'&ts='+Date.now(),{cache:'no-store'});S.snap=j;S.version=j.version||v;S.sync=new Date();render();return}catch(e){last=e;await recover(e.message);await new Promise(r=>setTimeout(r,600*(i+1)))}}try{const j=await browserRecoverySnapshot();S.snap=j;S.version=j.version;S.sync=new Date();setInfo('Direct Google Sheets recovery active • '+fmt(j.rows.length)+' DATABASE rows read in browser.');render();return}catch(e){last=e}throw last}
+async function check(){let last;for(let i=0;i<4;i++){try{const m=await json('/api/meta?ts='+Date.now(),{cache:'no-store'});$('agentBadge').textContent=m.agent?.configured?'READY':'CONFIG NEEDED';$('agentBadge').className=m.agent?.configured?'ready':'need';if(!S.version||m.version!==S.version)await snap(m.version);else{S.sync=new Date();$('live').textContent='LIVE • '+S.sync.toLocaleTimeString()}if(m.diagnostics?.sheet)setInfo('Google Sheets API reachable • '+(m.diagnostics.sheet.title||'DATABASE')+' • '+fmt(m.diagnostics.sheet.rowCount)+' rows detected.');return}catch(e){last=e;await recover(e.message);await new Promise(r=>setTimeout(r,600*(i+1)))}}try{const j=await browserRecoverySnapshot();S.snap=j;S.version=j.version;S.sync=new Date();setInfo('Direct Google Sheets recovery active • '+fmt(j.rows.length)+' DATABASE rows read in browser.');render();return}catch(e){last=e}setAlert('All source recovery paths failed: '+(last?.message||'Google Sheet unavailable'))}
 async function agent(action){const token=prompt('NOC_AGENT_TOKEN');if(!token)return;try{const j=await json('/api/agent',{method:'POST',headers:{'Content-Type':'application/json','x-noc-agent-token':token},body:JSON.stringify({action})});alert(action==='audit'?'Formula audit completed: '+(j.issues?.length||0)+' issues.':'Repair completed: '+(j.repairedRuns||0)+' runs.');await check()}catch(e){alert(e.message)}}
 ['province','status','finding','rfo','concern','period'].forEach(id=>$(id).addEventListener('change',()=>{S.filters[id]=$(id).value;render()}));
 $('audit').onclick=()=>agent('audit');$('repair').onclick=()=>agent('repair');
