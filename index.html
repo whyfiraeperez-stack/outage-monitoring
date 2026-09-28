@@ -211,6 +211,31 @@ function csvRows(text){
   if(cell!==''||row.length){row.push(cell);if(row.some(v=>String(v).trim()!==''))out.push(row)}
   return out;
 }
+function gvizJsonp(gid,timeoutMs=12000){
+  return new Promise((resolve,reject)=>{
+    const cb='__noc_gviz_'+Date.now()+'_'+Math.random().toString(36).slice(2);
+    const script=document.createElement('script');
+    let done=false;
+    const cleanup=()=>{done=true;clearTimeout(timer);try{delete window[cb]}catch(_){window[cb]=undefined}script.remove()};
+    const timer=setTimeout(()=>{cleanup();reject(new Error('Google Sheets JSONP timeout'))},timeoutMs);
+    window[cb]=(payload)=>{
+      if(done)return;
+      try{
+        if(!payload||payload.status!=='ok'||!payload.table)throw new Error(payload?.errors?.[0]?.detailed_message||payload?.errors?.[0]?.message||'Google Sheets JSONP error');
+        const cols=payload.table.cols||[];
+        const out=[cols.map(c=>c.label||'')];
+        for(const row of (payload.table.rows||[])){
+          out.push(cols.map((_,i)=>{const cell=(row.c||[])[i];return cell?(cell.f??cell.v??''):''}));
+        }
+        cleanup();
+        resolve(out);
+      }catch(e){cleanup();reject(e)}
+    };
+    script.onerror=()=>{cleanup();reject(new Error('Google Sheets JSONP script failed to load'))};
+    script.src='https://docs.google.com/spreadsheets/d/e/'+PUBLIC_SHEET_ID+'/gviz/tq?gid='+gid+'&tqx=out%3Ajson%3BresponseHandler%3A'+encodeURIComponent(cb)+'&_='+Date.now();
+    document.head.appendChild(script);
+  });
+}
 async function browserPublishedCsv(gid){
   const urls=[
     'https://docs.google.com/spreadsheets/d/e/'+PUBLIC_SHEET_ID+'/gviz/tq?tqx=out:csv&gid='+gid+'&_='+Date.now(),
@@ -228,6 +253,11 @@ async function browserPublishedCsv(gid){
       last='empty CSV';
     }catch(e){last=e.message}
   }
+  try{
+    const rows=await gvizJsonp(gid);
+    if(rows.length>1)return rows;
+    last='empty JSONP response';
+  }catch(e){last=e.message}
   throw new Error('Public Google Sheets feed unavailable: '+last);
 }
 function headerRowFrom(rows,required){
@@ -336,7 +366,37 @@ async function browserRecoverySnapshot(){
 async function json(url,opt){const r=await fetch(url,opt);const j=await r.json().catch(()=>({ok:false,error:'Invalid server response'}));if(!r.ok||j.ok===false)throw new Error(j.error||'HTTP '+r.status);return j}
 async function recover(reason){try{await fetch('/api/agent?reason='+encodeURIComponent(reason||'runtime'),{cache:'no-store'}).catch(()=>{});await new Promise(r=>setTimeout(r,400));}catch(_){}} 
 async function snap(v){let last;for(let i=0;i<4;i++){try{const j=await json('/api/snapshot?version='+encodeURIComponent(v||'')+'&ts='+Date.now(),{cache:'no-store'});S.snap=j;S.version=j.version||v;S.sync=new Date();render();return}catch(e){last=e;await recover(e.message);await new Promise(r=>setTimeout(r,600*(i+1)))}}try{const j=await browserRecoverySnapshot();S.snap=j;S.version=j.version;S.sync=new Date();setInfo('Direct Google Sheets recovery active • '+fmt(j.rows.length)+' DATABASE rows read in browser.');render();return}catch(e){last=e}throw last}
-async function check(){let last;for(let i=0;i<4;i++){try{const m=await json('/api/meta?ts='+Date.now(),{cache:'no-store'});$('agentBadge').textContent=m.agent?.configured?'READY':'CONFIG NEEDED';$('agentBadge').className=m.agent?.configured?'ready':'need';if(!S.version||m.version!==S.version)await snap(m.version);else{S.sync=new Date();$('live').textContent='LIVE • '+S.sync.toLocaleTimeString()}if(m.diagnostics?.sheet)setInfo('Google Sheets API reachable • '+(m.diagnostics.sheet.title||'DATABASE')+' • '+fmt(m.diagnostics.sheet.rowCount)+' rows detected.');return}catch(e){last=e;await recover(e.message);await new Promise(r=>setTimeout(r,600*(i+1)))}}try{const j=await browserRecoverySnapshot();S.snap=j;S.version=j.version;S.sync=new Date();setInfo('Direct Google Sheets recovery active • '+fmt(j.rows.length)+' DATABASE rows read in browser.');render();return}catch(e){last=e}setAlert('All source recovery paths failed: '+(last?.message||'Google Sheet unavailable'))}
+async function check(){
+  let last;
+  // Prefer the direct Google published feed first. This removes dependency on Vercel/API auth
+  // and now includes a JSONP fallback for browsers that block cross-origin CSV fetches.
+  try{
+    const j=await browserRecoverySnapshot();
+    S.snap=j;S.version=j.version;S.sync=new Date();
+    setInfo('Direct Google Sheets recovery active • '+fmt(j.rows.length)+' DATABASE rows read in browser.');
+    render();
+    return;
+  }catch(e){last=e}
+  for(let i=0;i<3;i++){
+    try{
+      const m=await json('/api/meta?ts='+Date.now(),{cache:'no-store'});
+      $('agentBadge').textContent=m.agent?.configured?'READY':'CONFIG NEEDED';
+      $('agentBadge').className=m.agent?.configured?'ready':'need';
+      if(!S.version||m.version!==S.version)await snap(m.version);
+      else{S.sync=new Date();$('live').textContent='LIVE • '+S.sync.toLocaleTimeString()}
+      if(m.diagnostics?.sheet)setInfo('Google Sheets API reachable • '+(m.diagnostics.sheet.title||'DATABASE')+' • '+fmt(m.diagnostics.sheet.rowCount)+' rows detected.');
+      return;
+    }catch(e){last=e;await recover(e.message);await new Promise(r=>setTimeout(r,600*(i+1)))}
+  }
+  try{
+    const j=await browserRecoverySnapshot();
+    S.snap=j;S.version=j.version;S.sync=new Date();
+    setInfo('Direct Google Sheets recovery active • '+fmt(j.rows.length)+' DATABASE rows read in browser.');
+    render();
+    return;
+  }catch(e){last=e}
+  setAlert('All source recovery paths failed: '+(last?.message||'Google Sheet unavailable'));
+}
 async function agent(action){const token=prompt('NOC_AGENT_TOKEN');if(!token)return;try{const j=await json('/api/agent',{method:'POST',headers:{'Content-Type':'application/json','x-noc-agent-token':token},body:JSON.stringify({action})});alert(action==='audit'?'Formula audit completed: '+(j.issues?.length||0)+' issues.':'Repair completed: '+(j.repairedRuns||0)+' runs.');await check()}catch(e){alert(e.message)}}
 ['province','status','finding','rfo','concern','period'].forEach(id=>$(id).addEventListener('change',()=>{S.filters[id]=$(id).value;render()}));
 $('audit').onclick=()=>agent('audit');$('repair').onclick=()=>agent('repair');
