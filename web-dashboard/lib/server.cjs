@@ -154,73 +154,40 @@ function apiErrorInfo(error) {
   return {code, status, reason: reason || null, message};
 }
 
-async function readByGid(gid) {
+async function readByGid(gid, kind) {
   const {sheets} = clients();
-  const response = await sheets.spreadsheets.values.batchGetByDataFilter({
+  const range = kind === 'db'
+    ? "'DATABASE'!A:AN"
+    : "'NAP DOWN'!A:H";
+  const response = await sheets.spreadsheets.values.batchGet({
     spreadsheetId: CFG.sheetId,
-    requestBody: {
-      dataFilters: [{
-        gridRange: {
-          sheetId: Number(gid),
-          startRowIndex: 0,
-          startColumnIndex: 0
-        }
-      }],
-      majorDimension: 'ROWS',
-      valueRenderOption: 'FORMATTED_VALUE',
-      dateTimeRenderOption: 'FORMATTED_STRING'
-    }
+    ranges: [range],
+    majorDimension: 'ROWS',
+    valueRenderOption: 'FORMATTED_VALUE',
+    dateTimeRenderOption: 'FORMATTED_STRING'
   });
-  const vr = response.data?.valueRanges?.[0]?.valueRange;
-  return Array.isArray(vr?.values) ? vr.values : [];
+  return response.data?.valueRanges?.[0]?.values || [];
 }
 
 async function readDirectRaw() {
   const {sheets} = clients();
-
-  async function once() {
-    const response = await sheets.spreadsheets.values.batchGetByDataFilter({
-      spreadsheetId: CFG.sheetId,
-      requestBody: {
-        dataFilters: [
-          {gridRange: {sheetId: Number(CFG.dbGid), startRowIndex: 0, startColumnIndex: 0, endColumnIndex: 40}},
-          {gridRange: {sheetId: Number(CFG.napGid), startRowIndex: 0, startColumnIndex: 0, endColumnIndex: 40}}
-        ],
-        majorDimension: 'ROWS',
-        valueRenderOption: 'FORMATTED_VALUE',
-        dateTimeRenderOption: 'FORMATTED_STRING'
-      }
+  const response = await sheets.spreadsheets.values.batchGet({
+    spreadsheetId: CFG.sheetId,
+    ranges: ["'DATABASE'!A:AN", "'NAP DOWN'!A:H"],
+    majorDimension: 'ROWS',
+    valueRenderOption: 'FORMATTED_VALUE',
+    dateTimeRenderOption: 'FORMATTED_STRING'
+  });
+  const ranges = response.data?.valueRanges || [];
+  if (ranges.length < 2) {
+    throw Object.assign(new Error('Google Sheets returned an incomplete DATABASE/NAP DOWN response.'), {
+      code: 'SHEET_RANGE_MISSING'
     });
-
-    const ranges = response.data?.valueRanges || [];
-    const byGid = new Map();
-    for (const item of ranges) {
-      const gid = item?.dataFilters?.[0]?.gridRange?.sheetId;
-      if (gid != null) byGid.set(String(gid), item?.valueRange?.values || []);
-    }
-
-    if (!byGid.has(String(CFG.dbGid)) || !byGid.has(String(CFG.napGid))) {
-      throw Object.assign(new Error('Google Sheets returned an incomplete DATABASE/NAP DOWN batch.'), {code:'SHEET_RANGE_MISSING'});
-    }
-
-    return {
-      dbValues: Array.isArray(byGid.get(String(CFG.dbGid))) ? byGid.get(String(CFG.dbGid)) : [],
-      napValues: Array.isArray(byGid.get(String(CFG.napGid))) ? byGid.get(String(CFG.napGid)) : []
-    };
   }
-
-  let last;
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    try {
-      return await once();
-    } catch (error) {
-      last = error;
-      const status = Number(error?.response?.status || error?.code || 0);
-      if (![408,429,500,502,503,504].includes(status) || attempt === 2) throw error;
-      await new Promise(resolve => setTimeout(resolve, 400 * (2 ** attempt)));
-    }
-  }
-  throw last;
+  return {
+    dbValues: Array.isArray(ranges[0]?.values) ? ranges[0].values : [],
+    napValues: Array.isArray(ranges[1]?.values) ? ranges[1].values : []
+  };
 }
 
 async function healthProbe() {
