@@ -30,7 +30,7 @@ h1{font-size:22px;line-height:1.15;margin:0;font-weight:800}
 .info{background:#f0f6fb;border:1px solid #d6e5f1;color:#28526f}.alert{background:#fff1f3;border:1px solid #efc9cf;color:#8f2b3a}
 .filters{display:grid;grid-template-columns:repeat(6,minmax(120px,1fr));gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px;box-shadow:var(--shadow)}
 .meta{padding:8px 1px 10px;color:var(--muted);font-size:9px}.meta b{color:#273744}
-.kpis{display:grid;grid-template-columns:repeat(2,minmax(220px,1fr));gap:10px}
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(200px,1fr));gap:10px}
 .kpi{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;box-shadow:var(--shadow)}
 .kpi .label{font-size:8px;font-weight:800;letter-spacing:.6px;color:var(--muted)}
 .kpi .value{font-size:30px;line-height:1;margin-top:7px;font-weight:850}
@@ -59,6 +59,12 @@ h1{font-size:22px;line-height:1.15;margin:0;font-weight:800}
 .nap-filter{display:flex;flex-direction:column;gap:4px}.nap-filter label{font-size:7px;font-weight:800;color:var(--muted);letter-spacing:.5px}.nap-filter select{height:31px;border:1px solid #cfd7df;border-radius:6px;background:#fff;padding:0 8px;font-size:9px;color:#24313d}
 .nap-clear{height:31px;align-self:end;border:1px solid #cfd7df;border-radius:6px;background:#fff;padding:0 10px;font-size:9px;font-weight:700;color:#44515d;cursor:pointer}
 .nap-filter-meta{margin-top:6px;font-size:8px;color:var(--muted)}
+.nap-countbar{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:10px;padding:8px 10px;background:#f8fafc;border:1px solid #e7ecf1;border-radius:8px}
+.nap-countbar .count{font-size:9px;font-weight:800;letter-spacing:.4px}.nap-countbar .count b{font-size:16px;margin-left:4px}.nap-countbar .sort-note{font-size:8px;color:var(--muted);text-align:right}
+.nap-summary-wrap{margin-top:8px;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.nap-summary{width:100%;border-collapse:collapse;table-layout:fixed}.nap-summary th,.nap-summary td{padding:7px 8px;border-bottom:1px solid #edf0f4;font-size:8.5px;text-align:left}
+.nap-summary th{background:#f7f9fb;color:#687585;font-size:8px;text-transform:uppercase;letter-spacing:.45px}.nap-summary td:last-child,.nap-summary th:last-child{text-align:right;width:12%}
+.nap-summary td:nth-child(1){width:30%}.nap-summary td:nth-child(2){width:58%}
 .note-line{font-size:8px;color:var(--muted);margin-top:8px}
 .empty{padding:24px;text-align:center;color:#7c8996;font-size:9px}
 .data-health{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
@@ -66,7 +72,7 @@ h1{font-size:22px;line-height:1.15;margin:0;font-weight:800}
 footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;color:#7c8996;font-size:8px}
 .loading{padding:30px;text-align:center;color:var(--muted);font-size:10px}
 @media(max-width:1150px){.grid{grid-template-columns:1fr}.data-health{grid-template-columns:repeat(2,1fr)}.filters{grid-template-columns:repeat(3,1fr)}}
-@media(max-width:720px){body{padding:9px}.top{display:block}.top-right{justify-content:flex-start;margin-top:10px}.filters{grid-template-columns:1fr}.kpis{grid-template-columns:1fr}.data-health{grid-template-columns:1fr}.nap-filters{grid-template-columns:1fr 1fr}.nap-clear{width:100%}.nap-table th,.nap-table td{padding:7px 5px;font-size:7.5px}.donut-wrap{flex-direction:column}.legend{width:100%}}
+@media(max-width:720px){body{padding:9px}.top{display:block}.top-right{justify-content:flex-start;margin-top:10px}.filters{grid-template-columns:1fr}.kpis{grid-template-columns:1fr}.data-health{grid-template-columns:1fr}.nap-filters{grid-template-columns:1fr 1fr}.nap-clear{width:100%}.nap-countbar{display:block}.nap-countbar .sort-note{margin-top:4px;text-align:left}.nap-table th,.nap-table td{padding:7px 5px;font-size:7.5px}.donut-wrap{flex-direction:column}.legend{width:100%}}
 </style>
 </head>
 <body>
@@ -84,6 +90,7 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;co
     <span id="clock" class="time">—</span>
     <div class="control"><label>MONTH</label><select id="month"></select></div>
     <div class="control"><label>DATE</label><select id="date"></select></div>
+    <div class="control"><label>RESTORED DATE</label><select id="restoredDate"></select></div>
   </div>
 </header>
 
@@ -103,7 +110,8 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;co
 
 <section class="kpis">
   <article class="kpi pending"><div class="label">PENDING</div><div id="pending" class="value">—</div><div class="note">DATABASE FINAL STATUS</div></article>
-  <article class="kpi restored"><div class="label">RESTORED</div><div id="restored" class="value">—</div><div class="note">DATABASE FINAL STATUS</div></article>
+  <article class="kpi restored"><div class="label">RESTORED</div><div id="restored" class="value">—</div><div class="note">DATABASE FINAL STATUS (FILTERED)</div></article>
+  <article class="kpi restored"><div class="label">RESTORED • SELECTED DATE</div><div id="restoredDay" class="value">—</div><div id="restoredDayNote" class="note">DATE RESTORED</div></article>
   
 </section>
 
@@ -131,6 +139,16 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;co
       <button id="napClear" class="nap-clear" type="button">CLEAR FILTERS</button>
     </div>
     <div id="napFilterMeta" class="nap-filter-meta">All NAP DOWN areas</div>
+    <div class="nap-countbar">
+      <div class="count">NAP DOWN <b id="napCount">—</b></div>
+      <div class="sort-note">Sorted Province A–Z • Municipality A–Z • Ageing high → low</div>
+    </div>
+    <div class="nap-summary-wrap">
+      <table class="nap-summary">
+        <thead><tr><th>Province</th><th>Findings</th><th>Count</th></tr></thead>
+        <tbody id="napSummary"><tr><td colspan="3" class="empty">Waiting for source…</td></tr></tbody>
+      </table>
+    </div>
     <div class="nap-table-wrap">
       <table class="nap-table">
         <thead><tr>
@@ -148,7 +166,7 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;co
 
 <script>
 const $ = id => document.getElementById(id);
-const S = {snap:null,lastGood:null,filters:{month:'ALL',date:'ALL',province:'ALL',status:'ALL',finding:'ALL',rfo:'ALL',concern:'ALL'},napFilters:{province:'ALL',municipality:'ALL',barangay:'ALL'},loading:false};
+const S = {snap:null,lastGood:null,filters:{month:'ALL',date:'ALL',province:'ALL',status:'ALL',finding:'ALL',rfo:'ALL',concern:'ALL'},napFilters:{province:'ALL',municipality:'ALL',barangay:'ALL'},restoredDate:'TODAY',loading:false};
 const REFRESH_MS = 30000;
 
 function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
@@ -187,6 +205,12 @@ function syncDateSelects(){
   $('date').innerHTML='<option value="ALL">All dates</option>'+allowed.map(k=>'<option value="'+k+'">'+dateLabel(k)+'</option>').join('');
   $('date').value=allowed.includes(pd)?pd:'ALL';
   S.filters.date=$('date').value;
+
+  const restoredDates=[...new Set(db.map(r=>dayKey(r.dateRestored)).filter(Boolean))].sort().reverse();
+  const current=S.restoredDate;
+  $('restoredDate').innerHTML='<option value="TODAY">Today</option>'+restoredDates.map(k=>'<option value="'+k+'">'+dateLabel(k)+'</option>').join('');
+  $('restoredDate').value=current==='TODAY'||restoredDates.includes(current)?current:'TODAY';
+  S.restoredDate=$('restoredDate').value;
 }
 function syncFilters(){
   const o=S.snap?.options||{};
@@ -242,6 +266,25 @@ function chart(counts,total){
   const legend=entries.map(([k,v],i)=>'<div class="legend-row"><span class="dot" style="background:'+palette[i%palette.length]+'"></span><span class="legend-name">'+esc(k)+'</span><span class="legend-value">'+fmt(v)+'<span class="legend-share">('+(v/total*100).toFixed(1)+'%)</span></span></div>').join('');
   return'<div class="donut-wrap"><div class="donut" style="background:conic-gradient('+segments.join(',')+')"><div class="donut-center"><small>Total filtered</small><b>'+fmt(total)+'</b></div></div><div class="legend">'+legend+'</div></div>';
 }
+function durationHours(value){
+  const s=norm(value);
+  const dayMatch=s.match(/(\d+)\s*DAY/);
+  const hourMatch=s.match(/(\d+)\s*HOUR/);
+  const minMatch=s.match(/(\d+)\s*MIN/);
+  return (Number(dayMatch?.[1]||0)*24)+(Number(hourMatch?.[1]||0))+(Number(minMatch?.[1]||0)/60);
+}
+function manilaTodayKey(){
+  const parts=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Manila',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+  const p=Object.fromEntries(parts.filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));
+  return p.year+'-'+p.month+'-'+p.day;
+}
+function dbContextMatch(r){
+  if(S.filters.province!=='ALL'&&r.province!==S.filters.province)return false;
+  if(S.filters.finding!=='ALL'&&r.finding!==S.filters.finding)return false;
+  if(S.filters.rfo!=='ALL'&&r.rfo!==S.filters.rfo)return false;
+  if(S.filters.concern!=='ALL'&&r.concern!==S.filters.concern)return false;
+  return true;
+}
 function render(){
   syncFilters();
   syncNapFilters();
@@ -252,21 +295,63 @@ function render(){
   const pending=db.filter(r=>norm(r.finalStatus)==='PENDING').length;
   const restored=db.filter(r=>norm(r.finalStatus)==='RESTORED').length;
 
-  $('pending').textContent=fmt(pending);$('restored').textContent=fmt(restored);
+  const restoredDayKey=S.restoredDate==='TODAY'?manilaTodayKey():S.restoredDate;
+  const restoredDayRows=(S.snap?.rows||[]).filter(r=>
+    norm(r.finalStatus)==='RESTORED' &&
+    dbContextMatch(r) &&
+    dayKey(r.dateRestored)===restoredDayKey
+  );
+  $('pending').textContent=fmt(pending);
+  $('restored').textContent=fmt(restored);
+  $('restoredDay').textContent=fmt(restoredDayRows.length);
+  $('restoredDayNote').textContent=S.restoredDate==='TODAY'?'DATE RESTORED • TODAY':('DATE RESTORED • '+dateLabel(S.restoredDate));
+
   $('statusChart').innerHTML=chart(counts,total);
   $('dbRows').textContent=fmt(S.snap?.diagnostics?.databaseRows);
   $('formulaErrors').textContent=fmt(S.snap?.diagnostics?.formulaErrors);
   $('lastVerified').textContent=S.snap?.checkedAt?new Date(S.snap.checkedAt).toLocaleTimeString():'—';
-  $('meta').innerHTML='DATABASE FINAL STATUS: <b>'+fmt(total)+' filtered rows</b> • PENDING: <b>'+fmt(pending)+'</b> • RESTORED: <b>'+fmt(restored)+'</b> • '+(S.filters.date==='ALL'?'All dates':dateLabel(S.filters.date));
-  const rows=nap.slice().sort((a,b)=>(parseDate(b.dateEndorsed)?.getTime()||0)-(parseDate(a.dateEndorsed)?.getTime()||0));
+  $('meta').innerHTML='DATABASE FINAL STATUS: <b>'+fmt(total)+' filtered rows</b> • PENDING: <b>'+fmt(pending)+'</b> • RESTORED: <b>'+fmt(restored)+'</b> • RESTORED ON SELECTED DATE: <b>'+fmt(restoredDayRows.length)+'</b> • '+(S.filters.date==='ALL'?'All endorsed dates':dateLabel(S.filters.date));
+
+  const rows=nap.slice().sort((a,b)=>{
+    const province=clean(a.province).localeCompare(clean(b.province),undefined,{sensitivity:'base'});
+    if(province!==0)return province;
+    const municipality=clean(a.municipality).localeCompare(clean(b.municipality),undefined,{sensitivity:'base'});
+    if(municipality!==0)return municipality;
+    const barangay=clean(a.barangay).localeCompare(clean(b.barangay),undefined,{sensitivity:'base'});
+    if(barangay!==0)return barangay;
+    const age=durationHours(b.duration)-durationHours(a.duration);
+    if(age!==0)return age;
+    return clean(a.napCode).localeCompare(clean(b.napCode),undefined,{sensitivity:'base'});
+  });
+
+  const summary={};
+  nap.forEach(r=>{
+    const province=clean(r.province)||'UNKNOWN';
+    const finding=clean(r.finding)||'BLANK';
+    const key=province+'\u0000'+finding;
+    summary[key]=(summary[key]||0)+1;
+  });
+  const summaryRows=Object.entries(summary).map(([key,count])=>{
+    const [province,finding]=key.split('\u0000');
+    return {province,finding,count};
+  }).sort((a,b)=>{
+    const p=a.province.localeCompare(b.province,undefined,{sensitivity:'base'});
+    return p!==0?p:a.finding.localeCompare(b.finding,undefined,{sensitivity:'base'});
+  });
+
+  $('napCount').textContent=fmt(nap.length);
+  $('napSummary').innerHTML=summaryRows.length?summaryRows.map(r=>'<tr><td>'+esc(r.province)+'</td><td>'+esc(r.finding)+'</td><td>'+fmt(r.count)+'</td></tr>').join(''):'<tr><td colspan="3" class="empty">No NAP DOWN summary rows match the current filters.</td></tr>';
+
   $('napTable').innerHTML=rows.length?rows.map(r=>{
     const dt=r.dateEndorsedDisplay||r.dateEndorsed||'—';
     return'<tr><td>'+esc(r.province||'—')+'</td><td>'+esc(r.municipality||'—')+'</td><td>'+esc(r.barangay||'—')+'</td><td>'+esc(r.napCode||'—')+'</td><td>'+esc(r.coordinates||'—')+'</td><td>'+esc(dt)+'</td><td class="duration">'+esc(r.duration||'—')+'</td><td class="finding">'+esc(r.finding||'—')+'</td></tr>'
   }).join(''):'<tr><td colspan="8" class="empty">No NAP DOWN rows match the current filters.</td></tr>';
+
   $('napFilterMeta').textContent = nap.length + ' NAP DOWN rows shown' +
     (S.napFilters.province!=='ALL'?' • '+S.napFilters.province:'') +
     (S.napFilters.municipality!=='ALL'?' • '+S.napFilters.municipality:'') +
     (S.napFilters.barangay!=='ALL'?' • '+S.napFilters.barangay:'');
+
   $('updated').textContent='Last update '+(S.snap?.checkedAt?new Date(S.snap.checkedAt).toLocaleString():'—');
   $('foot').textContent='Source: Google Sheets API • Direct read • no published-feed fallback';
 }
@@ -307,6 +392,7 @@ function bind(){
   ['province','status','finding','rfo','concern'].forEach(id=>$(id).addEventListener('change',()=>{S.filters[id]=$(id).value;render()}));
   $('month').addEventListener('change',()=>{S.filters.month=$('month').value;S.filters.date='ALL';render()});
   $('date').addEventListener('change',()=>{S.filters.date=$('date').value;render()});
+  $('restoredDate').addEventListener('change',()=>{S.restoredDate=$('restoredDate').value;render()});
   $('napProvince').addEventListener('change',()=>{S.napFilters.province=$('napProvince').value;S.napFilters.municipality='ALL';S.napFilters.barangay='ALL';render()});
   $('napMunicipality').addEventListener('change',()=>{S.napFilters.municipality=$('napMunicipality').value;S.napFilters.barangay='ALL';render()});
   $('napBarangay').addEventListener('change',()=>{S.napFilters.barangay=$('napBarangay').value;render()});
