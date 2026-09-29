@@ -21,13 +21,13 @@ module.exports = async (req, res) => {
     return res.status(200).json({
       ok: true,
       agent: 'noc-sync-agent',
-      healthy: true,
+      healthy: snapshot.syncState === 'SYNCED',
       configured: true,
-      syncState: 'SYNCED',
+      syncState: snapshot.syncState || 'SYNCED',
       diagnostics: {
         ...diagnostics,
-        googleSheetsApi: 'reachable',
-        source: 'direct'
+        googleSheetsApi: snapshot.sourceMode === 'google-sheets-api' ? 'reachable' : 'disabled',
+        source: snapshot.sourceMode || 'unknown'
       },
       report: {
         version: snapshot.version,

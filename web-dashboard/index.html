@@ -247,8 +247,16 @@ async function fetchSnapshot(){
     const r=await fetch('/api/snapshot?ts='+Date.now(),{cache:'no-store'});
     const j=await r.json().catch(()=>({ok:false,diagnostics:{code:'INVALID_RESPONSE',message:'Invalid JSON response from dashboard API.'}}));
     if(!r.ok||j.ok===false){showSnapshotError(j,'HTTP '+r.status);return}
-    S.snap=j;S.lastGood=j;setAlert('');setInfo('');
-    setBadge('SYNCED','SYNCED');
+    S.snap=j;S.lastGood=j;
+    if(j.syncState==='SYNCED'){
+      setAlert('');setInfo('');setBadge('SYNCED','SYNCED');
+    }else if(j.syncState==='DEGRADED'){
+      setBadge('DEGRADED','PUBLISHED FALLBACK');
+      setAlert('DIRECT GOOGLE SHEETS API IS DISABLED • dashboard is using the published Google Sheets feed. This is read-only and may lag the live spreadsheet by a few minutes.');
+      setInfo('Enable the Google Sheets API in the Google Cloud project shown by the direct-source error. The published feed will continue to keep the dashboard operational until direct access is restored.');
+    }else{
+      setAlert('Source returned an unrecognized sync state: '+String(j.syncState||'unknown'));
+    }
     render();
   }catch(e){
     showSnapshotError(null,e.message);

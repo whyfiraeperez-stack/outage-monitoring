@@ -9,7 +9,7 @@ module.exports = async (req, res) => {
     const force = String(req?.query?.refresh || '') === '1';
     const snapshot = await getSnapshot({force});
     res.statusCode = 200;
-    res.setHeader('X-NOC-Source', 'google-sheets-api');
+    res.setHeader('X-NOC-Source', snapshot.sourceMode || 'unknown');
     res.setHeader('X-NOC-Version', snapshot.version);
     return res.json(snapshot);
   } catch (error) {
