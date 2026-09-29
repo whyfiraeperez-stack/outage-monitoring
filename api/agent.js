@@ -1,29 +1,100 @@
-const {configured,credentialDiagnostics,sample}=require('../lib/server.cjs');
-let state={lastAutoRecovery:null,attempts:0,lastError:null};
+const {configured,credentialDiagnostics,sample,source,version}=require('../lib/server.cjs');
+const {build}=require('../lib/noc.cjs');
+let state={lastAutoRecovery:null,attempts:0,lastError:null,lastSync:null,lastReport:null};
+
+function isoDay(v){
+  const d=new Date(v||'');
+  if(Number.isNaN(d.getTime()))return '';
+  return d.toISOString().slice(0,10);
+}
+function summarizeRows(rows){
+  const r=Array.isArray(rows)?rows:[];
+  const statusCounts={};
+  let minDate='',maxDate='';
+  for(const x of r){
+    const s=String(x.finalStatus||'BLANK').trim()||'BLANK';
+    statusCounts[s]=(statusCounts[s]||0)+1;
+    const k=isoDay(x.dateEndorsed);
+    if(k&&(!minDate||k<minDate))minDate=k;
+    if(k&&(!maxDate||k>maxDate))maxDate=k;
+  }
+  return {rows:r.length,statusCounts,pending:statusCounts.PENDING||0,restored:statusCounts.RESTORED||0,minEndorsedDate:minDate,maxEndorsedDate:maxDate};
+}
+
 module.exports=async(req,res)=>{
   res.setHeader('Cache-Control','no-store');
   state.attempts++;
   state.lastAutoRecovery=new Date().toISOString();
+
   const diagnostics=credentialDiagnostics();
   if(!diagnostics.configured){
     state.lastError=diagnostics.error;
-    return res.status(200).json({ok:true,agent:'runtime-self-heal',configured:false,diagnostics,state});
-  }
-  try{
-    const db=await sample(process.env.GOOGLE_SHEET_GID_DATABASE||'946404240');
-    state.lastError=null;
+    state.lastReport={
+      syncState:'AUTH_REQUIRED',
+      sourceMode:'published-csv-readonly',
+      message:'Direct Google Sheets API is not configured. Published data may be stale and is not treated as authoritative.'
+    };
     return res.status(200).json({
-      ok:true,agent:'runtime-self-heal',configured:true,diagnostics:{
-        ...diagnostics,
-        googleSheetsApi:'reachable',
-        sheetTitle:db.properties?.title||'',
-        rowCount:Number(db.properties?.gridProperties?.rowCount||0),
-        sampleRows:(db.values||[]).length
-      },state,
-      recovery:['retry source reads','chunk large sheet reads','detect real header rows','fallback to published feed','rebuild NAP DOWN from DATABASE PENDING','never rewrite raw spreadsheet data']
+      ok:true,
+      agent:'noc-ai-style-sync-agent',
+      configured:false,
+      healthy:false,
+      diagnostics,
+      state,
+      recovery:['configure GOOGLE_SERVICE_ACCOUNT_JSON or GOOGLE_SERVICE_ACCOUNT_JSON_BASE64 in Vercel','retry direct Sheets API','reject stale published data as authoritative']
+    });
+  }
+
+  try{
+    const v=await version();
+    const dbSource=await source(process.env.GOOGLE_SHEET_GID_DATABASE||'946404240','db');
+    const napSource=await source(process.env.GOOGLE_SHEET_GID_NAP_DOWN||'1995500191','nap');
+    const built=build(dbSource,napSource,v,'google-sheets-api-agent');
+    const dbSummary=summarizeRows(built.rows||[]);
+    const napRows=built.napDownRows||[];
+    const napPending=napRows.filter(x=>String(x.finalStatus||'').trim().toUpperCase()==='PENDING').length;
+    const report={
+      syncState:'SYNCED',
+      sourceMode:'google-sheets-api',
+      version:v,
+      database:dbSummary,
+      napDown:{
+        rows:napRows.length,
+        pending:napPending,
+        headerRow:built.diagnostics?.napHeaderRow||null
+      },
+      reconciliation:built.reconciliation||null,
+      checkedAt:new Date().toISOString()
+    };
+    state.lastError=null;
+    state.lastSync=report.checkedAt;
+    state.lastReport=report;
+    return res.status(200).json({
+      ok:true,
+      agent:'noc-ai-style-sync-agent',
+      configured:true,
+      healthy:true,
+      diagnostics:{...diagnostics,googleSheetsApi:'reachable'},
+      state,
+      report,
+      recovery:['direct Google Sheets read','header validation','status-count validation','NAP DOWN reconciliation','surface mismatch instead of guessing']
     });
   }catch(e){
     state.lastError=String(e?.message||e);
-    return res.status(200).json({ok:true,agent:'runtime-self-heal',configured:true,diagnostics:{...diagnostics,googleSheetsApi:'unreachable',apiError:state.lastError},state,recoverable:true});
+    state.lastReport={
+      syncState:'SOURCE_ERROR',
+      message:state.lastError,
+      checkedAt:new Date().toISOString()
+    };
+    return res.status(200).json({
+      ok:true,
+      agent:'noc-ai-style-sync-agent',
+      configured:true,
+      healthy:false,
+      diagnostics:{...diagnostics,googleSheetsApi:'unreachable',apiError:state.lastError},
+      state,
+      recoverable:true,
+      recovery:['retry direct Google Sheets API','do not promote published fallback to authoritative live source','surface source error in dashboard']
+    });
   }
 };
