@@ -289,6 +289,9 @@ function render(){
   $('restored').textContent=fmt(restored);
 
   $('statusChart').innerHTML=chart(counts,total);
+  $('dbRows').textContent=fmt(S.snap?.diagnostics?.databaseRows);
+  $('formulaErrors').textContent=fmt(S.snap?.diagnostics?.formulaErrors);
+  $('lastVerified').textContent=S.snap?.checkedAt?new Date(S.snap.checkedAt).toLocaleTimeString():'—';
 
 
   const rows=nap.slice().sort((a,b)=>{
