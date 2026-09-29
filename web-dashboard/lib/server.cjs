@@ -27,13 +27,15 @@ function parseJsonCandidate(value) {
 function decodeBase64Json(value) {
   try {
     let s = String(value || '').trim()
+      .replace(/^['"]|['"]$/g, '')
       .replace(/^data:.*?;base64,/i, '')
       .replace(/^base64:/i, '')
-      .replace(/[\\r\\n\\t ]+/g, '')
+      .replace(/\s+/g, '')
       .replace(/-/g, '+')
       .replace(/_/g, '/');
     while (s.length % 4) s += '=';
-    return parseJsonCandidate(Buffer.from(s, 'base64').toString('utf8'));
+    const decoded = Buffer.from(s, 'base64').toString('utf8').replace(/^\uFEFF/, '').trim();
+    return parseJsonCandidate(decoded);
   } catch (_) {
     return null;
   }
