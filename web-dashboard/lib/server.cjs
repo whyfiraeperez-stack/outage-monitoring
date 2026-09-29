@@ -175,30 +175,50 @@ async function readByGid(gid) {
 
 async function readDirectRaw() {
   const {sheets} = clients();
-  const response = await sheets.spreadsheets.values.batchGetByDataFilter({
-    spreadsheetId: CFG.sheetId,
-    requestBody: {
-      dataFilters: [
-        {gridRange: {sheetId: Number(CFG.dbGid), startRowIndex: 0, startColumnIndex: 0}},
-        {gridRange: {sheetId: Number(CFG.napGid), startRowIndex: 0, startColumnIndex: 0}}
-      ],
-      majorDimension: 'ROWS',
-      valueRenderOption: 'FORMATTED_VALUE',
-      dateTimeRenderOption: 'FORMATTED_STRING'
-    }
-  });
 
-  const ranges = response.data?.valueRanges || [];
-  if (ranges.length < 2) {
-    throw Object.assign(new Error('Google Sheets returned fewer than two expected sheet ranges.'), {
-      code: 'SHEET_RANGE_MISSING'
+  async function once() {
+    const response = await sheets.spreadsheets.values.batchGetByDataFilter({
+      spreadsheetId: CFG.sheetId,
+      requestBody: {
+        dataFilters: [
+          {gridRange: {sheetId: Number(CFG.dbGid), startRowIndex: 0, startColumnIndex: 0, endColumnIndex: 40}},
+          {gridRange: {sheetId: Number(CFG.napGid), startRowIndex: 0, startColumnIndex: 0, endColumnIndex: 40}}
+        ],
+        majorDimension: 'ROWS',
+        valueRenderOption: 'FORMATTED_VALUE',
+        dateTimeRenderOption: 'FORMATTED_STRING'
+      }
     });
+
+    const ranges = response.data?.valueRanges || [];
+    const byGid = new Map();
+    for (const item of ranges) {
+      const gid = item?.dataFilters?.[0]?.gridRange?.sheetId;
+      if (gid != null) byGid.set(String(gid), item?.valueRange?.values || []);
+    }
+
+    if (!byGid.has(String(CFG.dbGid)) || !byGid.has(String(CFG.napGid))) {
+      throw Object.assign(new Error('Google Sheets returned an incomplete DATABASE/NAP DOWN batch.'), {code:'SHEET_RANGE_MISSING'});
+    }
+
+    return {
+      dbValues: Array.isArray(byGid.get(String(CFG.dbGid))) ? byGid.get(String(CFG.dbGid)) : [],
+      napValues: Array.isArray(byGid.get(String(CFG.napGid))) ? byGid.get(String(CFG.napGid)) : []
+    };
   }
 
-  return {
-    dbValues: Array.isArray(ranges[0]?.valueRange?.values) ? ranges[0].valueRange.values : [],
-    napValues: Array.isArray(ranges[1]?.valueRange?.values) ? ranges[1].valueRange.values : []
-  };
+  let last;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await once();
+    } catch (error) {
+      last = error;
+      const status = Number(error?.response?.status || error?.code || 0);
+      if (![408,429,500,502,503,504].includes(status) || attempt === 2) throw error;
+      await new Promise(resolve => setTimeout(resolve, 400 * (2 ** attempt)));
+    }
+  }
+  throw last;
 }
 
 async function healthProbe() {
