@@ -80,10 +80,24 @@ module.exports=async(req,res)=>{
       recovery:['direct Google Sheets read','header validation','status-count validation','NAP DOWN reconciliation','surface mismatch instead of guessing']
     });
   }catch(e){
-    state.lastError=String(e?.message||e);
+    const raw=String(e?.message||e||'Unknown Google Sheets API error');
+    const lower=raw.toLowerCase();
+    const errorCode=/permission|forbidden|does not have permission|caller does not have permission/.test(lower)
+      ? 'SHEET_ACCESS_DENIED'
+      : /not found|requested entity was not found/.test(lower)
+      ? 'SHEET_NOT_FOUND'
+      : /api .*not enabled|has not been used|disabled/.test(lower)
+      ? 'SHEETS_API_DISABLED'
+      : /invalid_grant|unauthenticated|invalid authentication|invalid credential/.test(lower)
+      ? 'GOOGLE_AUTH_FAILED'
+      : /quota|rate.?limit|too many requests/.test(lower)
+      ? 'GOOGLE_QUOTA'
+      : 'GOOGLE_API_ERROR';
+    state.lastError=raw;
     state.lastReport={
       syncState:'SOURCE_ERROR',
-      message:state.lastError,
+      message:raw,
+      errorCode,
       checkedAt:new Date().toISOString()
     };
     return res.status(200).json({
@@ -91,10 +105,10 @@ module.exports=async(req,res)=>{
       agent:'noc-ai-style-sync-agent',
       configured:true,
       healthy:false,
-      diagnostics:{...diagnostics,googleSheetsApi:'unreachable',apiError:state.lastError},
+      diagnostics:{...diagnostics,googleSheetsApi:'unreachable',apiError:raw,errorCode},
       state,
       recoverable:true,
-      recovery:['retry direct Google Sheets API','do not promote published fallback to authoritative live source','surface source error in dashboard']
+      recovery:['retry direct Google Sheets API','verify spreadsheet sharing for the service account','verify Google Sheets API is enabled in the service-account project','do not promote published fallback to authoritative live source','surface the exact source error in dashboard']
     });
   }
 };
