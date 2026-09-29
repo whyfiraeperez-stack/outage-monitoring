@@ -141,7 +141,7 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;co
     <div id="napFilterMeta" class="nap-filter-meta">All NAP DOWN areas</div>
     <div class="nap-countbar">
       <div class="count">NAP DOWN <b id="napCount">—</b></div>
-      <div class="sort-note">Sorted Province A–Z • Municipality A–Z • Ageing high → low</div>
+      <div class="sort-note">Count excludes blank Province and blank Findings • Sorted Province A–Z • Municipality A–Z • Ageing high → low</div>
     </div>
     <div class="nap-summary-wrap">
       <table class="nap-summary">
@@ -289,7 +289,8 @@ function render(){
   syncFilters();
   syncNapFilters();
   const db=(S.snap?.rows||[]).filter(matchDb);
-  const nap=(S.snap?.napDownRows||[]).filter(matchNap);
+  const napAll=(S.snap?.napDownRows||[]).filter(matchNap);
+  const nap=napAll.filter(r=>clean(r.province)!==''&&clean(r.finding)!=='');
   const counts={};db.forEach(r=>{const s=clean(r.finalStatus)||'BLANK';counts[s]=(counts[s]||0)+1});
   const total=db.length;
   const pending=db.filter(r=>norm(r.finalStatus)==='PENDING').length;
@@ -347,7 +348,7 @@ function render(){
     return'<tr><td>'+esc(r.province||'—')+'</td><td>'+esc(r.municipality||'—')+'</td><td>'+esc(r.barangay||'—')+'</td><td>'+esc(r.napCode||'—')+'</td><td>'+esc(r.coordinates||'—')+'</td><td>'+esc(dt)+'</td><td class="duration">'+esc(r.duration||'—')+'</td><td class="finding">'+esc(r.finding||'—')+'</td></tr>'
   }).join(''):'<tr><td colspan="8" class="empty">No NAP DOWN rows match the current filters.</td></tr>';
 
-  $('napFilterMeta').textContent = nap.length + ' NAP DOWN rows shown' +
+  $('napFilterMeta').textContent = nap.length + ' NAP DOWN counted rows shown' +
     (S.napFilters.province!=='ALL'?' • '+S.napFilters.province:'') +
     (S.napFilters.municipality!=='ALL'?' • '+S.napFilters.municipality:'') +
     (S.napFilters.barangay!=='ALL'?' • '+S.napFilters.barangay:'');
