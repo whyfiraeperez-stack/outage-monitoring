@@ -90,7 +90,6 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;co
     <span id="clock" class="time">—</span>
     <div class="control"><label>MONTH</label><select id="month"></select></div>
     <div class="control"><label>DATE</label><select id="date"></select></div>
-    <div class="control"><label>RESTORED DATE</label><select id="restoredDate"></select></div>
   </div>
 </header>
 
@@ -166,7 +165,7 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;co
 
 <script>
 const $ = id => document.getElementById(id);
-const S = {snap:null,lastGood:null,filters:{month:'ALL',date:'ALL',province:'ALL',status:'ALL',finding:'ALL',rfo:'ALL',concern:'ALL'},napFilters:{province:'ALL',municipality:'ALL',barangay:'ALL'},restoredDate:'TODAY',loading:false};
+const S = {snap:null,lastGood:null,filters:{month:'ALL',date:'ALL',province:'ALL',status:'ALL',finding:'ALL',rfo:'ALL',concern:'ALL'},napFilters:{province:'ALL',municipality:'ALL',barangay:'ALL'},loading:false};
 const REFRESH_MS = 30000;
 
 function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
@@ -206,11 +205,6 @@ function syncDateSelects(){
   $('date').value=allowed.includes(pd)?pd:'ALL';
   S.filters.date=$('date').value;
 
-  const restoredDates=[...new Set(db.map(r=>dayKey(r.dateRestored)).filter(Boolean))].sort().reverse();
-  const current=S.restoredDate;
-  $('restoredDate').innerHTML='<option value="TODAY">Today</option>'+restoredDates.map(k=>'<option value="'+k+'">'+dateLabel(k)+'</option>').join('');
-  $('restoredDate').value=current==='TODAY'||restoredDates.includes(current)?current:'TODAY';
-  S.restoredDate=$('restoredDate').value;
 }
 function syncFilters(){
   const o=S.snap?.options||{};
@@ -296,7 +290,7 @@ function render(){
   const pending=db.filter(r=>norm(r.finalStatus)==='PENDING').length;
   const restored=db.filter(r=>norm(r.finalStatus)==='RESTORED').length;
 
-  const restoredDayKey=S.restoredDate==='TODAY'?manilaTodayKey():S.restoredDate;
+  const restoredDayKey=S.filters.date!=='ALL'?S.filters.date:manilaTodayKey();
   const restoredDayRows=(S.snap?.rows||[]).filter(r=>
     norm(r.finalStatus)==='RESTORED' &&
     dbContextMatch(r) &&
@@ -305,7 +299,7 @@ function render(){
   $('pending').textContent=fmt(pending);
   $('restored').textContent=fmt(restored);
   $('restoredDay').textContent=fmt(restoredDayRows.length);
-  $('restoredDayNote').textContent=S.restoredDate==='TODAY'?'DATE RESTORED • TODAY':('DATE RESTORED • '+dateLabel(S.restoredDate));
+  $('restoredDayNote').textContent=S.filters.date!=='ALL'?'DATE RESTORED • '+dateLabel(restoredDayKey):'DATE RESTORED • TODAY';
 
   $('statusChart').innerHTML=chart(counts,total);
   $('dbRows').textContent=fmt(S.snap?.diagnostics?.databaseRows);
@@ -393,7 +387,6 @@ function bind(){
   ['province','status','finding','rfo','concern'].forEach(id=>$(id).addEventListener('change',()=>{S.filters[id]=$(id).value;render()}));
   $('month').addEventListener('change',()=>{S.filters.month=$('month').value;S.filters.date='ALL';render()});
   $('date').addEventListener('change',()=>{S.filters.date=$('date').value;render()});
-  $('restoredDate').addEventListener('change',()=>{S.restoredDate=$('restoredDate').value;render()});
   $('napProvince').addEventListener('change',()=>{S.napFilters.province=$('napProvince').value;S.napFilters.municipality='ALL';S.napFilters.barangay='ALL';render()});
   $('napMunicipality').addEventListener('change',()=>{S.napFilters.municipality=$('napMunicipality').value;S.napFilters.barangay='ALL';render()});
   $('napBarangay').addEventListener('change',()=>{S.napFilters.barangay=$('napBarangay').value;render()});
