@@ -30,13 +30,13 @@ h1{font-size:22px;line-height:1.15;margin:0;font-weight:800}
 .info{background:#f0f6fb;border:1px solid #d6e5f1;color:#28526f}.alert{background:#fff1f3;border:1px solid #efc9cf;color:#8f2b3a}
 .filters{display:grid;grid-template-columns:repeat(6,minmax(120px,1fr));gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px;box-shadow:var(--shadow)}
 .meta{padding:8px 1px 10px;color:var(--muted);font-size:9px}.meta b{color:#273744}
-.kpis{display:grid;grid-template-columns:repeat(3,minmax(220px,1fr));gap:10px}
+.kpis{display:grid;grid-template-columns:repeat(2,minmax(220px,1fr));gap:10px}
 .kpi{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;box-shadow:var(--shadow)}
 .kpi .label{font-size:8px;font-weight:800;letter-spacing:.6px;color:var(--muted)}
 .kpi .value{font-size:30px;line-height:1;margin-top:7px;font-weight:850}
 .kpi .note{font-size:8.5px;color:var(--muted);margin-top:6px}
 .kpi.pending{border-top:3px solid var(--red)}.kpi.restored{border-top:3px solid var(--green)}.kpi.nap{border-top:3px solid var(--blue)}
-.grid{display:grid;grid-template-columns:1fr 1.25fr;gap:10px;margin-top:10px}
+.grid{display:block;margin-top:10px}.grid > .panel + .panel{margin-top:18px}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;box-shadow:var(--shadow);min-width:0}
 .panel-head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
 .panel h2{font-size:12px;margin:0}.panel .desc{font-size:9px;color:var(--muted);margin-top:3px}
@@ -47,11 +47,14 @@ h1{font-size:22px;line-height:1.15;margin:0;font-weight:800}
 .donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1;text-align:center}
 .donut-center small{font-size:8px;color:var(--muted);letter-spacing:.55px;text-transform:uppercase}.donut-center b{font-size:24px;margin-top:3px}
 .legend{display:grid;gap:8px;min-width:210px}.legend-row{display:grid;grid-template-columns:9px 1fr auto;gap:7px;align-items:center;font-size:9px}.dot{width:8px;height:8px;border-radius:50%}.legend-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.legend-value{font-weight:800}.legend-share{font-weight:400;color:var(--muted);margin-left:4px}
-.nap-table-wrap{overflow:auto;max-height:560px;border:1px solid var(--line);border-radius:8px;margin-top:10px}
-.nap-table{width:100%;min-width:1120px;border-collapse:collapse}
-.nap-table th,.nap-table td{padding:8px 9px;border-bottom:1px solid #edf0f4;text-align:left;vertical-align:top}
+.nap-table-wrap{overflow:hidden;border:1px solid var(--line);border-radius:8px;margin-top:10px}
+.nap-table{width:100%;table-layout:fixed;border-collapse:collapse}
+.nap-table th,.nap-table td{padding:8px 7px;border-bottom:1px solid #edf0f4;text-align:left;vertical-align:top;overflow-wrap:anywhere;word-break:break-word}
 .nap-table th{position:sticky;top:0;background:#f7f9fb;z-index:2;color:#687585;font-size:8px;text-transform:uppercase;letter-spacing:.45px}
-.nap-table td{font-size:9px;white-space:nowrap}.nap-table td.finding{white-space:normal;min-width:230px}.nap-table td.duration{font-weight:800}
+.nap-table td{font-size:8.5px;white-space:normal}
+.nap-table th:nth-child(1){width:11%}.nap-table th:nth-child(2){width:11%}.nap-table th:nth-child(3){width:11%}.nap-table th:nth-child(4){width:13%}
+.nap-table th:nth-child(5){width:15%}.nap-table th:nth-child(6){width:13%}.nap-table th:nth-child(7){width:9%}.nap-table th:nth-child(8){width:17%}
+.nap-table td.finding{white-space:normal}.nap-table td.duration{font-weight:800}
 .note-line{font-size:8px;color:var(--muted);margin-top:8px}
 .empty{padding:24px;text-align:center;color:#7c8996;font-size:9px}
 .data-health{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
@@ -59,7 +62,7 @@ h1{font-size:22px;line-height:1.15;margin:0;font-weight:800}
 footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;color:#7c8996;font-size:8px}
 .loading{padding:30px;text-align:center;color:var(--muted);font-size:10px}
 @media(max-width:1150px){.grid{grid-template-columns:1fr}.data-health{grid-template-columns:repeat(2,1fr)}.filters{grid-template-columns:repeat(3,1fr)}}
-@media(max-width:720px){body{padding:9px}.top{display:block}.top-right{justify-content:flex-start;margin-top:10px}.filters{grid-template-columns:1fr}.kpis{grid-template-columns:1fr}.data-health{grid-template-columns:1fr}.donut-wrap{flex-direction:column}.legend{width:100%}}
+@media(max-width:720px){body{padding:9px}.top{display:block}.top-right{justify-content:flex-start;margin-top:10px}.filters{grid-template-columns:1fr}.kpis{grid-template-columns:1fr}.data-health{grid-template-columns:1fr}.nap-table th,.nap-table td{padding:7px 5px;font-size:7.5px}.donut-wrap{flex-direction:column}.legend{width:100%}}
 </style>
 </head>
 <body>
@@ -97,7 +100,7 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;co
 <section class="kpis">
   <article class="kpi pending"><div class="label">PENDING</div><div id="pending" class="value">—</div><div class="note">DATABASE FINAL STATUS</div></article>
   <article class="kpi restored"><div class="label">RESTORED</div><div id="restored" class="value">—</div><div class="note">DATABASE FINAL STATUS</div></article>
-  <article class="kpi nap"><div class="label">NAP DOWN</div><div id="napTotal" class="value">—</div><div class="note">ROWS IN NAP DOWN SHEET</div></article>
+  
 </section>
 
 <section class="grid">
@@ -108,7 +111,6 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;co
     <div id="statusChart" class="chart"><div class="loading">Waiting for source…</div></div>
     <div class="data-health">
       <div class="health-card"><small>DATABASE ROWS</small><b id="dbRows">—</b></div>
-      <div class="health-card"><small>NAP DOWN ROWS</small><b id="napRows">—</b></div>
       <div class="health-card"><small>FORMULA ERRORS</small><b id="formulaErrors">—</b></div>
       <div class="health-card"><small>LAST VERIFIED</small><b id="lastVerified">—</b></div>
     </div>
@@ -215,12 +217,12 @@ function render(){
   const pending=db.filter(r=>norm(r.finalStatus)==='PENDING').length;
   const restored=db.filter(r=>norm(r.finalStatus)==='RESTORED').length;
 
-  $('pending').textContent=fmt(pending);$('restored').textContent=fmt(restored);$('napTotal').textContent=fmt(nap.length);
+  $('pending').textContent=fmt(pending);$('restored').textContent=fmt(restored);
   $('statusChart').innerHTML=chart(counts,total);
-  $('dbRows').textContent=fmt(S.snap?.diagnostics?.databaseRows);$('napRows').textContent=fmt(S.snap?.diagnostics?.napDownRows);
+  $('dbRows').textContent=fmt(S.snap?.diagnostics?.databaseRows);
   $('formulaErrors').textContent=fmt(S.snap?.diagnostics?.formulaErrors);
   $('lastVerified').textContent=S.snap?.checkedAt?new Date(S.snap.checkedAt).toLocaleTimeString():'—';
-  $('meta').innerHTML='DATABASE FINAL STATUS: <b>'+fmt(total)+' filtered rows</b> • PENDING: <b>'+fmt(pending)+'</b> • RESTORED: <b>'+fmt(restored)+'</b> • NAP DOWN: <b>'+fmt(nap.length)+'</b> • '+(S.filters.date==='ALL'?'All dates':dateLabel(S.filters.date));
+  $('meta').innerHTML='DATABASE FINAL STATUS: <b>'+fmt(total)+' filtered rows</b> • PENDING: <b>'+fmt(pending)+'</b> • RESTORED: <b>'+fmt(restored)+'</b> • '+(S.filters.date==='ALL'?'All dates':dateLabel(S.filters.date));
   const rows=nap.slice().sort((a,b)=>(parseDate(b.dateEndorsed)?.getTime()||0)-(parseDate(a.dateEndorsed)?.getTime()||0));
   $('napTable').innerHTML=rows.length?rows.map(r=>{
     const dt=r.dateEndorsed?parseDate(r.dateEndorsed)?.toLocaleString():'—';
