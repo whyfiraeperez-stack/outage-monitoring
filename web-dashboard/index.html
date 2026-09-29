@@ -55,6 +55,10 @@ h1{font-size:22px;line-height:1.15;margin:0;font-weight:800}
 .nap-table th:nth-child(1){width:11%}.nap-table th:nth-child(2){width:11%}.nap-table th:nth-child(3){width:11%}.nap-table th:nth-child(4){width:13%}
 .nap-table th:nth-child(5){width:15%}.nap-table th:nth-child(6){width:13%}.nap-table th:nth-child(7){width:9%}.nap-table th:nth-child(8){width:17%}
 .nap-table td.finding{white-space:normal}.nap-table td.duration{font-weight:800}
+.nap-filters{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;margin-top:10px;padding:8px;background:#f8fafc;border:1px solid #e7ecf1;border-radius:8px}
+.nap-filter{display:flex;flex-direction:column;gap:4px}.nap-filter label{font-size:7px;font-weight:800;color:var(--muted);letter-spacing:.5px}.nap-filter select{height:31px;border:1px solid #cfd7df;border-radius:6px;background:#fff;padding:0 8px;font-size:9px;color:#24313d}
+.nap-clear{height:31px;align-self:end;border:1px solid #cfd7df;border-radius:6px;background:#fff;padding:0 10px;font-size:9px;font-weight:700;color:#44515d;cursor:pointer}
+.nap-filter-meta{margin-top:6px;font-size:8px;color:var(--muted)}
 .note-line{font-size:8px;color:var(--muted);margin-top:8px}
 .empty{padding:24px;text-align:center;color:#7c8996;font-size:9px}
 .data-health{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
@@ -62,7 +66,7 @@ h1{font-size:22px;line-height:1.15;margin:0;font-weight:800}
 footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;color:#7c8996;font-size:8px}
 .loading{padding:30px;text-align:center;color:var(--muted);font-size:10px}
 @media(max-width:1150px){.grid{grid-template-columns:1fr}.data-health{grid-template-columns:repeat(2,1fr)}.filters{grid-template-columns:repeat(3,1fr)}}
-@media(max-width:720px){body{padding:9px}.top{display:block}.top-right{justify-content:flex-start;margin-top:10px}.filters{grid-template-columns:1fr}.kpis{grid-template-columns:1fr}.data-health{grid-template-columns:1fr}.nap-table th,.nap-table td{padding:7px 5px;font-size:7.5px}.donut-wrap{flex-direction:column}.legend{width:100%}}
+@media(max-width:720px){body{padding:9px}.top{display:block}.top-right{justify-content:flex-start;margin-top:10px}.filters{grid-template-columns:1fr}.kpis{grid-template-columns:1fr}.data-health{grid-template-columns:1fr}.nap-filters{grid-template-columns:1fr 1fr}.nap-clear{width:100%}.nap-table th,.nap-table td{padding:7px 5px;font-size:7.5px}.donut-wrap{flex-direction:column}.legend{width:100%}}
 </style>
 </head>
 <body>
@@ -120,6 +124,13 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;co
     <div class="panel-head">
       <div><h2>NAP DOWN</h2><div class="desc">Direct rows from the NAP DOWN sheet; no database reconciliation or invented fields.</div></div>
     </div>
+    <div class="nap-filters" aria-label="NAP DOWN area filters">
+      <div class="nap-filter"><label for="napProvince">PROVINCE</label><select id="napProvince"><option value="ALL">All provinces</option></select></div>
+      <div class="nap-filter"><label for="napMunicipality">MUNICIPALITY</label><select id="napMunicipality"><option value="ALL">All municipalities</option></select></div>
+      <div class="nap-filter"><label for="napBarangay">BARANGAY</label><select id="napBarangay"><option value="ALL">All barangays</option></select></div>
+      <button id="napClear" class="nap-clear" type="button">CLEAR FILTERS</button>
+    </div>
+    <div id="napFilterMeta" class="nap-filter-meta">All NAP DOWN areas</div>
     <div class="nap-table-wrap">
       <table class="nap-table">
         <thead><tr>
@@ -137,7 +148,7 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;co
 
 <script>
 const $ = id => document.getElementById(id);
-const S = {snap:null,lastGood:null,filters:{month:'ALL',date:'ALL',province:'ALL',status:'ALL',finding:'ALL',rfo:'ALL',concern:'ALL'},loading:false};
+const S = {snap:null,lastGood:null,filters:{month:'ALL',date:'ALL',province:'ALL',status:'ALL',finding:'ALL',rfo:'ALL',concern:'ALL'},napFilters:{province:'ALL',municipality:'ALL',barangay:'ALL'},loading:false};
 const REFRESH_MS = 30000;
 
 function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
@@ -191,11 +202,34 @@ function matchDb(r){
   if(S.filters.month!=='ALL'&&!dayKey(r.dateEndorsed).startsWith(S.filters.month))return false;
   return true;
 }
+function setNapSelect(id,values,label){
+  const el=$(id);
+  const key=id==='napProvince'?'province':id==='napMunicipality'?'municipality':'barangay';
+  const current=S.napFilters[key];
+  const vals=[...new Set((values||[]).filter(v=>clean(v)!==''))].sort((a,b)=>String(a).localeCompare(String(b)));
+  el.innerHTML='<option value="ALL">'+label+'</option>'+vals.map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join('');
+  el.value=vals.includes(current)?current:'ALL';
+}
+function syncNapFilters(){
+  const rows=S.snap?.napDownRows||[];
+  const provinceVals=rows.map(r=>r.province);
+  const municipalityVals=rows.filter(r=>S.napFilters.province==='ALL'||r.province===S.napFilters.province).map(r=>r.municipality);
+  const barangayVals=rows.filter(r=>
+    (S.napFilters.province==='ALL'||r.province===S.napFilters.province) &&
+    (S.napFilters.municipality==='ALL'||r.municipality===S.napFilters.municipality)
+  ).map(r=>r.barangay);
+
+  setNapSelect('napProvince',provinceVals,'All provinces');
+  S.napFilters.province=$('napProvince').value;
+  setNapSelect('napMunicipality',municipalityVals,'All municipalities');
+  S.napFilters.municipality=$('napMunicipality').value;
+  setNapSelect('napBarangay',barangayVals,'All barangays');
+  S.napFilters.barangay=$('napBarangay').value;
+}
 function matchNap(r){
-  if(S.filters.province!=='ALL'&&r.province!==S.filters.province)return false;
-  if(S.filters.finding!=='ALL'&&r.finding!==S.filters.finding)return false;
-  if(S.filters.date!=='ALL'&&dayKey(r.dateEndorsed)!==S.filters.date)return false;
-  if(S.filters.month!=='ALL'&&!dayKey(r.dateEndorsed).startsWith(S.filters.month))return false;
+  if(S.napFilters.province!=='ALL'&&r.province!==S.napFilters.province)return false;
+  if(S.napFilters.municipality!=='ALL'&&r.municipality!==S.napFilters.municipality)return false;
+  if(S.napFilters.barangay!=='ALL'&&r.barangay!==S.napFilters.barangay)return false;
   return true;
 }
 function chart(counts,total){
@@ -210,6 +244,7 @@ function chart(counts,total){
 }
 function render(){
   syncFilters();
+  syncNapFilters();
   const db=(S.snap?.rows||[]).filter(matchDb);
   const nap=(S.snap?.napDownRows||[]).filter(matchNap);
   const counts={};db.forEach(r=>{const s=clean(r.finalStatus)||'BLANK';counts[s]=(counts[s]||0)+1});
@@ -225,9 +260,13 @@ function render(){
   $('meta').innerHTML='DATABASE FINAL STATUS: <b>'+fmt(total)+' filtered rows</b> • PENDING: <b>'+fmt(pending)+'</b> • RESTORED: <b>'+fmt(restored)+'</b> • '+(S.filters.date==='ALL'?'All dates':dateLabel(S.filters.date));
   const rows=nap.slice().sort((a,b)=>(parseDate(b.dateEndorsed)?.getTime()||0)-(parseDate(a.dateEndorsed)?.getTime()||0));
   $('napTable').innerHTML=rows.length?rows.map(r=>{
-    const dt=r.dateEndorsed?parseDate(r.dateEndorsed)?.toLocaleString():'—';
-    return'<tr><td>'+esc(r.province||'—')+'</td><td>'+esc(r.municipality||'—')+'</td><td>'+esc(r.barangay||'—')+'</td><td>'+esc(r.napCode||'—')+'</td><td>'+esc(r.coordinates||'—')+'</td><td>'+esc(dt||'—')+'</td><td class="duration">'+esc(r.duration||'—')+'</td><td class="finding">'+esc(r.finding||'—')+'</td></tr>'
+    const dt=r.dateEndorsedDisplay||r.dateEndorsed||'—';
+    return'<tr><td>'+esc(r.province||'—')+'</td><td>'+esc(r.municipality||'—')+'</td><td>'+esc(r.barangay||'—')+'</td><td>'+esc(r.napCode||'—')+'</td><td>'+esc(r.coordinates||'—')+'</td><td>'+esc(dt)+'</td><td class="duration">'+esc(r.duration||'—')+'</td><td class="finding">'+esc(r.finding||'—')+'</td></tr>'
   }).join(''):'<tr><td colspan="8" class="empty">No NAP DOWN rows match the current filters.</td></tr>';
+  $('napFilterMeta').textContent = nap.length + ' NAP DOWN rows shown' +
+    (S.napFilters.province!=='ALL'?' • '+S.napFilters.province:'') +
+    (S.napFilters.municipality!=='ALL'?' • '+S.napFilters.municipality:'') +
+    (S.napFilters.barangay!=='ALL'?' • '+S.napFilters.barangay:'');
   $('updated').textContent='Last update '+(S.snap?.checkedAt?new Date(S.snap.checkedAt).toLocaleString():'—');
   $('foot').textContent='Source: Google Sheets API • Direct read • no published-feed fallback';
 }
@@ -268,6 +307,10 @@ function bind(){
   ['province','status','finding','rfo','concern'].forEach(id=>$(id).addEventListener('change',()=>{S.filters[id]=$(id).value;render()}));
   $('month').addEventListener('change',()=>{S.filters.month=$('month').value;S.filters.date='ALL';render()});
   $('date').addEventListener('change',()=>{S.filters.date=$('date').value;render()});
+  $('napProvince').addEventListener('change',()=>{S.napFilters.province=$('napProvince').value;S.napFilters.municipality='ALL';S.napFilters.barangay='ALL';render()});
+  $('napMunicipality').addEventListener('change',()=>{S.napFilters.municipality=$('napMunicipality').value;S.napFilters.barangay='ALL';render()});
+  $('napBarangay').addEventListener('change',()=>{S.napFilters.barangay=$('napBarangay').value;render()});
+  $('napClear').addEventListener('click',()=>{S.napFilters={province:'ALL',municipality:'ALL',barangay:'ALL'};render()});
 }
 function tick(){ $('clock').textContent=new Date().toLocaleString() }
 bind();tick();setInterval(tick,1000);
