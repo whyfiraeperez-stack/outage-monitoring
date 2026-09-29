@@ -31,7 +31,7 @@ h1{font-size:22px;line-height:1.15;margin:0;font-weight:850;color:var(--brand-de
 .info{background:#f0f6fb;border:1px solid #d6e5f1;color:#28526f}.alert{background:#fff1f3;border:1px solid #efc9cf;color:#8f2b3a}
 .filters{display:grid;grid-template-columns:repeat(6,minmax(120px,1fr));gap:8px;background:var(--surface);border:1px solid var(--line);border-top:3px solid var(--brand);border-radius:10px;padding:10px;box-shadow:var(--shadow)}
 .meta{padding:8px 1px 10px;color:var(--muted);font-size:9px}.meta b{color:#273744}
-.kpis{display:grid;grid-template-columns:repeat(3,minmax(200px,1fr));gap:10px}
+.kpis{display:grid;grid-template-columns:repeat(2,minmax(200px,1fr));gap:10px}
 .kpi{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;box-shadow:var(--shadow)}
 .kpi .label{font-size:8px;font-weight:800;letter-spacing:.6px;color:var(--muted)}
 .kpi .value{font-size:30px;line-height:1;margin-top:7px;font-weight:850}
@@ -111,7 +111,6 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;co
 <section class="kpis">
   <article class="kpi pending"><div class="label">PENDING</div><div id="pending" class="value">—</div><div class="note">DATABASE FINAL STATUS</div></article>
   <article class="kpi restored"><div class="label">RESTORED</div><div id="restored" class="value">—</div><div class="note">DATABASE FINAL STATUS (FILTERED)</div></article>
-  <article class="kpi restored"><div class="label">RESTORED • SELECTED DATE</div><div id="restoredDay" class="value">—</div><div id="restoredDayNote" class="note">DATE RESTORED</div></article>
   
 </section>
 
@@ -291,16 +290,8 @@ function render(){
   const pending=db.filter(r=>norm(r.finalStatus)==='PENDING').length;
   const restored=db.filter(r=>norm(r.finalStatus)==='RESTORED').length;
 
-  const restoredDayKey=S.filters.date!=='ALL'?S.filters.date:manilaTodayKey();
-  const restoredDayRows=(S.snap?.rows||[]).filter(r=>
-    norm(r.finalStatus)==='RESTORED' &&
-    dbContextMatch(r) &&
-    dayKey(r.dateRestored)===restoredDayKey
-  );
   $('pending').textContent=fmt(pending);
   $('restored').textContent=fmt(restored);
-  $('restoredDay').textContent=fmt(restoredDayRows.length);
-  $('restoredDayNote').textContent=S.filters.date!=='ALL'?'DATE RESTORED • '+dateLabel(restoredDayKey):'DATE RESTORED • TODAY';
 
   $('statusChart').innerHTML=chart(counts,total);
   $('dbRows').textContent=fmt(S.snap?.diagnostics?.databaseRows);
