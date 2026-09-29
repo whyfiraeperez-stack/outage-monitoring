@@ -196,7 +196,22 @@ async function runSyncAgent(){
         :'Production has a credential environment variable, but the value is not valid service-account JSON/Base64 JSON. Replace it with Base64 of the complete JSON file, then redeploy.');
       return j
     }
-    if(!j.healthy){setAgentBadge('SOURCE_ERROR','SOURCE ERROR');setInfo('Credential is recognized, but Google Sheets API access failed. Confirm the service account has access to the spreadsheet, then redeploy/retry.');return j}
+    if(!j.healthy){
+      const d=j.diagnostics||{}, code=d.errorCode||j.report?.errorCode||'GOOGLE_API_ERROR';
+      const msg=d.apiError||j.report?.message||'Unknown Google Sheets API error';
+      const advice=code==='SHEET_ACCESS_DENIED'
+        ? 'Share the spreadsheet with the service-account email and retry.'
+        : code==='SHEETS_API_DISABLED'
+        ? 'Enable Google Sheets API in the service-account Google Cloud project and retry.'
+        : code==='SHEET_NOT_FOUND'
+        ? 'Verify the spreadsheet ID and sheet GIDs, then retry.'
+        : code==='GOOGLE_AUTH_FAILED'
+        ? 'Replace the Production service-account credential with the complete JSON/Base64 JSON and redeploy.'
+        : 'Check the exact Google API error below, then retry.';
+      setAgentBadge('SOURCE_ERROR','SOURCE ERROR');
+      setInfo('DIRECT SYNC FAILED • '+code+' • '+msg+' • '+advice);
+      return j
+    }
     const r=j.report||{};
     const currentDb=S.snap?.rows?.length;
     const currentNap=S.snap?.napDownRows?.length;
