@@ -125,6 +125,69 @@ function clients() {
   return {sheets: google.sheets({version: 'v4', auth: auth()})};
 }
 
+function parseCsv(text) {
+  const out = [];
+  let row = [], cell = '', quoted = false;
+  for (let i = 0; i < text.length; i += 1) {
+    const ch = text[i], next = text[i + 1];
+    if (ch === '"' && quoted && next === '"') { cell += '"'; i += 1; continue; }
+    if (ch === '"') { quoted = !quoted; continue; }
+    if (ch === ',' && !quoted) { row.push(cell); cell = ''; continue; }
+    if ((ch === '\n' || ch === '\r') && !quoted) {
+      if (ch === '\r' && next === '\n') i += 1;
+      row.push(cell); cell = '';
+      if (row.some(v => String(v).trim() !== '')) out.push(row);
+      row = [];
+      continue;
+    }
+    cell += ch;
+  }
+  if (cell !== '' || row.length) {
+    row.push(cell);
+    if (row.some(v => String(v).trim() !== '')) out.push(row);
+  }
+  return out;
+}
+
+function publishedLooksUsable(rows, kind) {
+  if (!Array.isArray(rows) || rows.length < 2) return false;
+  const header = (rows[0] || []).map(v => String(v || '').trim().toUpperCase());
+  const needed = kind === 'db'
+    ? ['PROVINCE']
+    : ['PROVINCE', 'MUNICIPALITY'];
+  return needed.every(x => header.includes(x));
+}
+
+async function readPublishedTab(gid, kind) {
+  const urls = [
+    'https://docs.google.com/spreadsheets/d/e/' + CFG.publishedId + '/pub?gid=' + gid + '&single=true&output=csv&cachebust=' + Date.now(),
+    'https://docs.google.com/spreadsheets/d/e/' + CFG.publishedId + '/gviz/tq?tqx=out:csv&gid=' + gid + '&cachebust=' + Date.now()
+  ];
+  let last = 'unavailable';
+  for (const url of urls) {
+    try {
+      const response = await fetch(url, {cache:'no-store'});
+      if (!response.ok) { last = 'HTTP ' + response.status; continue; }
+      const text = await response.text();
+      if (/^\s*</.test(text)) { last = 'HTML response'; continue; }
+      const rows = parseCsv(text);
+      if (publishedLooksUsable(rows, kind)) return rows;
+      last = 'unexpected headers';
+    } catch (error) {
+      last = String(error?.message || error);
+    }
+  }
+  throw Object.assign(new Error('Published Google Sheets feed unavailable: ' + last), {code:'PUBLISHED_UNAVAILABLE'});
+}
+
+async function readPublishedRaw() {
+  const [dbValues, napValues] = await Promise.all([
+    readPublishedTab(CFG.dbGid, 'db'),
+    readPublishedTab(CFG.napGid, 'nap')
+  ]);
+  return {dbValues, napValues};
+}
+
 function apiErrorInfo(error) {
   const status = Number(error?.response?.status || error?.code || 0) || null;
   const body = error?.response?.data?.error || error?.response?.data || {};
@@ -216,46 +279,59 @@ async function getSnapshot({force = false} = {}) {
 
       const raw = await readDirectRaw();
       const {build} = require('./noc.cjs');
-      const fingerprint = crypto.createHash('sha256')
-        .update(JSON.stringify(raw))
-        .digest('hex')
-        .slice(0, 20);
-
-      const built = build(
-        {values: raw.dbValues},
-        {values: raw.napValues},
-        fingerprint,
-        'google-sheets-api'
-      );
+      const fingerprint = crypto.createHash('sha256').update(JSON.stringify(raw)).digest('hex').slice(0, 20);
+      const built = build({values:raw.dbValues},{values:raw.napValues},fingerprint,'google-sheets-api');
 
       if (!built.rows.length) {
-        throw Object.assign(new Error('DATABASE was readable but no data rows were parsed.'), {code: 'SCHEMA_INVALID'});
-      }
-      if (!built.napDownHeaderRow) {
-        throw Object.assign(new Error('NAP DOWN was readable but its header row could not be detected.'), {code: 'SCHEMA_INVALID'});
+        throw Object.assign(new Error('DATABASE was readable but no data rows were parsed.'), {code:'SCHEMA_INVALID'});
       }
 
       const result = {
         ...built,
-        checkedAt: new Date().toISOString(),
-        source: 'Google Sheets API',
-        sourceMode: 'google-sheets-api',
-        syncState: 'SYNCED',
-        credential: {
-          source: diagnostics.source,
-          clientEmail: diagnostics.clientEmail,
-          projectId: diagnostics.projectId
-        }
+        checkedAt:new Date().toISOString(),
+        source:'Google Sheets API',
+        sourceMode:'google-sheets-api',
+        syncState:'SYNCED',
+        credential:{source:diagnostics.source,clientEmail:diagnostics.clientEmail,projectId:diagnostics.projectId}
       };
-
-      snapshotCache = {at: Date.now(), data: result};
+      snapshotCache={at:Date.now(),data:result};
       return result;
     } catch (error) {
-      const info = apiErrorInfo(error);
-      const nocCode = String(error?.code || '');
-      error.noc = ['MISSING_CREDENTIAL','INVALID_CREDENTIAL','SCHEMA_INVALID','SHEET_RANGE_MISSING'].includes(nocCode)
-        ? {code:nocCode,status:null,reason:null,message:String(error?.message||'')}
-        : info;
+      const info = error?.noc || apiErrorInfo(error);
+
+      // Temporary operational fallback for environments where the Sheets API is
+      // disabled. The published workbook remains read-only and is explicitly
+      // marked as degraded; it is never presented as a direct API sync.
+      if (info.code === 'SHEETS_API_DISABLED') {
+        try {
+          const raw = await readPublishedRaw();
+          const {build} = require('./noc.cjs');
+          const fingerprint = crypto.createHash('sha256').update(JSON.stringify(raw)).digest('hex').slice(0, 20);
+          const built = build({values:raw.dbValues},{values:raw.napValues},fingerprint,'published-feed-fallback');
+          if (!built.rows.length) throw new Error('Published DATABASE feed returned no usable rows.');
+          const fallback = {
+            ...built,
+            checkedAt:new Date().toISOString(),
+            source:'Google Sheets Publish to web',
+            sourceMode:'published-feed-fallback',
+            syncState:'DEGRADED',
+            directError:{code:info.code,status:info.status,reason:info.reason,message:info.message}
+          };
+          snapshotCache={at:Date.now(),data:fallback};
+          return fallback;
+        } catch (fallbackError) {
+          fallbackError.noc = {
+            code:'PUBLISHED_FALLBACK_FAILED',
+            status:fallbackError?.response?.status || null,
+            reason:null,
+            message:String(fallbackError?.message || fallbackError),
+            directError:info
+          };
+          throw fallbackError;
+        }
+      }
+
+      error.noc = info;
       throw error;
     } finally {
       inflight = null;
@@ -264,7 +340,6 @@ async function getSnapshot({force = false} = {}) {
 
   return inflight;
 }
-
 async function source(gid, kind) {
   const values = await readByGid(gid);
   return {
