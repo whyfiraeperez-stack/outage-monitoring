@@ -8,6 +8,8 @@
 :root{--bg:#f4f7fa;--card:#fff;--line:#d8e0e8;--text:#142131;--muted:#687789;--navy:#153a5b;--red:#c83d50;--amber:#b26b00;--green:#187b52;--blue:#1769aa;--purple:#7654b7}
 *{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font:13px/1.45 Arial,Helvetica,sans-serif}body{padding:14px}main{max-width:1750px;margin:auto}
 .top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:4px 0 12px}.brand{display:flex;gap:10px;align-items:flex-start}.mark{width:4px;height:36px;background:var(--navy);border-radius:4px}.top h1{margin:0;font-size:20px}.top p{margin:4px 0 0;color:var(--muted);font-size:10px}
+.top-right{display:flex;align-items:flex-start;gap:7px;flex-wrap:wrap;justify-content:flex-end}.report-control{display:flex;flex-direction:column;gap:3px}.report-control span{font-size:7px;color:#74808e;font-weight:800;letter-spacing:.6px}.report-control select{height:32px;min-width:118px;border:1px solid #cbd5df;border-radius:6px;background:#fff;padding:0 8px;font-size:9px;color:#172533}
+.agent-badge{display:flex;align-items:center;gap:5px;padding:8px 10px;border-radius:999px;font-size:8px;font-weight:800;letter-spacing:.2px;white-space:nowrap;border:1px solid #f1d19d;background:#fff7e7;color:#8a5a00}.agent-badge i{display:inline-block;width:7px;height:7px;border-radius:50%;background:#d49a27}.agent-badge.ok{border-color:#c9eadb;background:#eefaf4;color:#187b52}.agent-badge.ok i{background:#31a56d}.agent-badge.bad{border-color:#efc7ce;background:#fff1f3;color:#8b2637}.agent-badge.bad i{background:#c83d50}
 .live{padding:7px 11px;border:1px solid #c9eadb;background:#eefaf4;color:var(--green);border-radius:999px;font-size:9px;font-weight:800;white-space:nowrap}.live i{display:inline-block;width:7px;height:7px;border-radius:50%;background:#31a56d;margin-right:6px}
 .alert,.info{display:none;padding:9px 11px;border-radius:7px;font-size:10px;margin-bottom:8px}.alert{border:1px solid #efc7ce;background:#fff1f3;color:#8b2637}.info{border:1px solid #d6e3ef;background:#f1f7fc;color:#245273}
 .filters{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;background:#fff;border:1px solid var(--line);border-radius:9px;padding:9px}.filter span{display:block;color:#6d7887;font-size:8px;font-weight:800;letter-spacing:.55px;margin-bottom:4px}.filter select{width:100%;height:32px;border:1px solid #cbd5df;border-radius:6px;background:#fff;padding:0 8px;font-size:10px;color:#172533}
@@ -53,7 +55,15 @@
 </head>
 <body>
 <main>
-<header class="top"><div class="brand"><div class="mark"></div><div><h1>NAP NOC LIVE MONITORING</h1><p>DATABASE FINAL STATUS is the status source of truth • NAP DOWN is reconciled to DATABASE • Google Sheets connected • no chart library dependency</p></div></div><div class="live"><i></i><span id="live">LIVE • CONNECTING</span></div></header>
+<header class="top">
+<div class="brand"><div class="mark"></div><div><h1>NAP NOC LIVE MONITORING</h1><p>DATABASE FINAL STATUS is the status source of truth • NAP DOWN is read from the spreadsheet • direct Google Sheets sync is authoritative</p></div></div>
+<div class="top-right">
+<div class="report-control"><span>MONTH</span><select id="month"><option value="ALL">All months</option></select></div>
+<div class="report-control"><span>DATE</span><select id="date"><option value="ALL">All dates</option></select></div>
+<div class="agent-badge attention" id="agentStatus"><i></i><span>SYNC AGENT • CHECKING</span></div>
+<div class="live"><i></i><span id="live">LIVE • CONNECTING</span></div>
+</div>
+</header>
 <div id="alert" class="alert"></div><div id="info" class="info"></div>
 <div class="filters">
 <label class="filter"><span>PROVINCE</span><select id="province"><option value="ALL">All</option></select></label>
@@ -88,15 +98,37 @@
 <script>
 const REFRESH=15000,PUBLIC_SHEET_ID='2PACX-1vSKPMOn6CXZN3xn1zyKGcDyayAHLMuntjJ137x5dWxZzoJstX3Ef_XTtAgh6zId4n1gEyQBeL91lHFi',PUBLIC_GID_DB='946404240',PUBLIC_GID_NAP='1995500191';
 const TERMINAL=new Set(['RESTORED','DUPLICATED','NO PROBLEM WHEN CHECKED','DISREGARD','DUPLICATE ENTRY','CANCELLED','CLOSED']);
-const S={snap:null,filters:{province:'ALL',status:'ALL',finding:'ALL',rfo:'ALL',concern:'ALL',period:'ALL'},sync:null,loading:false};
+const S={snap:null,filters:{province:'ALL',status:'ALL',finding:'ALL',rfo:'ALL',concern:'ALL',period:'ALL',month:'ALL',date:'ALL'},sync:null,loading:false,agent:null};
 const $=id=>document.getElementById(id),fmt=n=>new Intl.NumberFormat('en-US').format(Number(n)||0),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),clean=v=>String(v??'').replace(/\u00a0/g,' ').replace(/[\t\r\n]+/g,' ').replace(/\s+/g,' ').trim(),norm=v=>clean(v).toUpperCase(),compact=v=>norm(v).replace(/[^A-Z0-9]+/g,''),dt=v=>{const x=new Date(v||'');return Number.isNaN(x.getTime())?null:x},hours=(start,end=new Date())=>{const a=dt(start);return a?Math.max(0,(end-a)/36e5):null},dur=h=>{if(h==null)return'—';const d=Math.floor(h/24),r=Math.floor(h%24),m=Math.floor((h%1)*60);return d?d+'d '+r+'h':r?r+'h '+m+'m':m+'m'},dayKey=v=>{const x=dt(v);return x?x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'):''},monthKey=v=>{const x=dt(v);return x?x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0'):''};
 function periodMatch(v,p){const d=dt(v),now=new Date();if(!d||p==='ALL')return true;const today=dayKey(now);if(p==='TODAY')return dayKey(d)===today;if(p==='YESTERDAY'){const x=new Date(now);x.setDate(x.getDate()-1);return dayKey(d)===dayKey(x)}if(p==='THIS_MONTH')return monthKey(d)===monthKey(now);if(p==='LAST_MONTH'){const x=new Date(now);x.setDate(1);x.setMonth(x.getMonth()-1);return monthKey(d)===monthKey(x)}if(p==='THIS_WEEK'){const x=new Date(now),day=x.getDay(),diff=day===0?-6:1-day;x.setDate(x.getDate()+diff);x.setHours(0,0,0,0);const y=new Date(x);y.setDate(y.getDate()+7);return d>=x&&d<y}if(p.startsWith('MONTH:'))return monthKey(d)===p.slice(6);return true}
 function matchBase(r){const f=S.filters;return(f.province==='ALL'||r.province===f.province)&&(f.status==='ALL'||r.finalStatus===f.status)&&(f.finding==='ALL'||r.finding===f.finding)&&(f.rfo==='ALL'||r.rfo===f.rfo)&&(f.concern==='ALL'||r.concern===f.concern)}
-function matchRow(r){return matchBase(r)&&periodMatch(r.dateEndorsed,S.filters.period)}
+function matchRow(r){
+  const f=S.filters;
+  if(f.month!=='ALL'&&monthKey(r.dateEndorsed)!==f.month)return false;
+  if(f.date!=='ALL'&&dayKey(r.dateEndorsed)!==f.date)return false;
+  return matchBase(r)&&periodMatch(r.dateEndorsed,f.period);
+}
 function setAlert(t){$('alert').style.display=t?'block':'none';$('alert').textContent=t||''}function setInfo(t){$('info').style.display=t?'block':'none';$('info').textContent=t||''}
 function uniq(a){return [...new Set((a||[]).filter(v=>clean(v)!=='').map(String))].sort()}
+function formatMonth(k){if(!k||k==='ALL')return'All months';const [y,m]=k.split('-');const d=new Date(Number(y),Number(m)-1,1);return d.toLocaleString('en-US',{month:'long',year:'numeric'})}
+function formatDate(k){if(!k||k==='ALL')return'All dates';const [y,m,d]=k.split('-');return new Date(Number(y),Number(m)-1,Number(d)).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}
+function syncDateSelectors(){
+  const dates=uniq((S.snap?.rows||[]).map(r=>dayKey(r.dateEndorsed)).filter(Boolean)).sort().reverse();
+  const months=uniq(dates.map(k=>k.slice(0,7))).sort().reverse();
+  const monthEl=$('month'),dateEl=$('date');
+  const priorMonth=S.filters.month,priorDate=S.filters.date;
+  monthEl.innerHTML='<option value="ALL">All months</option>'+months.map(k=>'<option value="'+esc(k)+'">'+esc(formatMonth(k))+'</option>').join('');
+  if(priorMonth!=='ALL'&&months.includes(priorMonth))monthEl.value=priorMonth;
+  else if(priorMonth==='ALL')monthEl.value='ALL'; else monthEl.value=months[0]||'ALL';
+  S.filters.month=monthEl.value;
+  const filteredDates=S.filters.month==='ALL'?dates:dates.filter(k=>k.startsWith(S.filters.month));
+  dateEl.innerHTML='<option value="ALL">All dates</option>'+filteredDates.map(k=>'<option value="'+esc(k)+'">'+esc(formatDate(k))+'</option>').join('');
+  if(priorDate!=='ALL'&&filteredDates.includes(priorDate))dateEl.value=priorDate;
+  else if(filteredDates.length&&priorDate!=='ALL')dateEl.value=filteredDates[0]; else dateEl.value='ALL';
+  S.filters.date=dateEl.value;
+}
 function setSelect(id,values){const e=$(id),current=S.filters[id],vals=uniq(values);let options=[['ALL','All'],...vals.map(v=>[v,v])];if(id==='period'){const months=uniq((S.snap?.rows||[]).map(r=>monthKey(r.dateEndorsed)).filter(Boolean)).sort().reverse();options.push(...months.map(m=>['MONTH:'+m,m]))}e.innerHTML=options.map(x=>'<option value="'+esc(x[0])+'">'+esc(x[1])+'</option>').join('');e.value=options.some(x=>x[0]===current)?current:'ALL';S.filters[id]=e.value}
-function syncFilters(){const o=S.snap?.options||{};setSelect('province',o.province||[]);setSelect('status',o.status||[]);setSelect('finding',o.finding||[]);setSelect('rfo',o.rfo||[]);setSelect('concern',o.concern||[]);setSelect('period',[])}
+function syncFilters(){const o=S.snap?.options||{};setSelect('province',o.province||[]);setSelect('status',o.status||[]);setSelect('finding',o.finding||[]);setSelect('rfo',o.rfo||[]);setSelect('concern',o.concern||[]);setSelect('period',[]);syncDateSelectors()}
 function filteredDb(){return(S.snap?.rows||[]).filter(matchRow)}function filteredNap(){return(S.snap?.napDownRows||[]).filter(matchRow)}function statusCounts(rows){const o={};for(const r of rows){const s=clean(r.finalStatus)||'BLANK';o[s]=(o[s]||0)+1}return o}
 function svgLine(rows){const w=760,h=245,pad={l:34,r:12,t:14,b:30},pts=rows.map((r,i)=>[i,r.value]),max=Math.max(1,...pts.map(x=>x[1])),x=i=>pad.l+(pts.length<=1?0:(w-pad.l-pad.r)*i/(pts.length-1)),y=v=>h-pad.b-(h-pad.t-pad.b)*(v/max);let s='<svg class="svg" viewBox="0 0 '+w+' '+h+'"><line x1="'+pad.l+'" y1="'+(h-pad.b)+'" x2="'+(w-pad.r)+'" y2="'+(h-pad.b)+'" stroke="#dce4eb"/><line x1="'+pad.l+'" y1="'+pad.t+'" x2="'+pad.l+'" y2="'+(h-pad.b)+'" stroke="#dce4eb"/>';if(pts.length){const path=pts.map((q,i)=>(i?'L':'M')+x(q[0]).toFixed(1)+' '+y(q[1]).toFixed(1)).join(' ');s+='<path d="'+path+'" fill="none" stroke="#1769aa" stroke-width="2.5"/>';pts.forEach((q,i)=>{s+='<circle cx="'+x(q[0]).toFixed(1)+'" cy="'+y(q[1]).toFixed(1)+'" r="2.8" fill="#1769aa"/>';if(i%Math.max(1,Math.ceil(pts.length/8))===0)s+='<text x="'+x(q[0]).toFixed(1)+'" y="'+(h-10)+'" text-anchor="middle" font-size="8" fill="#6d7b89">'+esc(rows[i].label.slice(5))+'</text>'})}else s+='<text x="50%" y="50%" text-anchor="middle" font-size="10" fill="#8190a0">No filtered data</text>';return s+'</svg>'}
 function barList(items,total,color){const max=Math.max(1,...items.map(x=>x.value),total||0);return items.map(x=>'<div class="status-row"><div class="status-head"><span>'+esc(x.label)+'</span><b>'+fmt(x.value)+'</b></div><div class="bar"><i style="width:'+((x.value/max)*100).toFixed(1)+'%;background:'+color+'"></i></div></div>').join('')}function donut(items,total,label){
@@ -118,7 +150,7 @@ function render(){
   $('pending').textContent=fmt(pending);
   $('restored').textContent=fmt(restored);
   $('napTotal').textContent=fmt(nap.length);
-  $('meta').innerHTML='DATABASE FINAL STATUS: <b>'+fmt(total)+' filtered rows</b> • PENDING: <b>'+fmt(pending)+'</b> • RESTORED: <b>'+fmt(restored)+'</b> • NAP DOWN: <b>'+fmt(nap.length)+'</b> • Last sync: <b>'+(S.sync?S.sync.toLocaleTimeString():'—')+'</b>';
+  $('meta').innerHTML='DATABASE FINAL STATUS: <b>'+fmt(total)+' filtered rows</b> • PENDING: <b>'+fmt(pending)+'</b> • RESTORED: <b>'+fmt(restored)+'</b> • NAP DOWN: <b>'+fmt(nap.length)+'</b> • REPORT DATE: <b>'+esc(formatDate(S.filters.date))+'</b> • '+(S.agent?.syncState==='SYNCED'?'SOURCE: DIRECT GOOGLE SHEETS':'SOURCE: '+esc(S.snap?.sourceMode||'CHECKING'))+' • Last sync: <b>'+(S.sync?S.sync.toLocaleTimeString():'—')+'</b>';
   setInfo('');
 
   const sItems=Object.entries(sc).sort((a,b)=>b[1]-a[1]).map(x=>({label:x[0],value:x[1]}));
@@ -147,11 +179,69 @@ function browserDb(rows){const hi=headerIdx(rows,['TIMESTAMP','PROVINCE','MUNICI
 function browserNap(rows){const hi=headerIdx(rows,['PROVINCE','MUNICIPALITY','NAP CODE','FINDINGS']);if(hi<0)throw new Error('Browser could not find NAP DOWN header');const h=rows[hi],c={province:ci(h,['PROVINCE']),municipality:ci(h,['MUNICIPALITY']),barangay:ci(h,['BARANGAY']),napCode:ci(h,['NAP CODE','NAPCODE']),endorsed:ci(h,['DATE ENDORSED','ENDORSED DATE']),duration:ci(h,['DURATION','AGEING','AGING']),finding:ci(h,['FINDINGS','FINDING']),status:ci(h,['FINAL STATUS','FINAL STAT','STATUS'])},out=[];for(let i=hi+1;i<rows.length;i++){const r=rows[i]||[];if(!r.some(v=>clean(v)!==''))continue;out.push({sourceRow:i+1,province:clean(c.province>=0?r[c.province]:''),municipality:clean(c.municipality>=0?r[c.municipality]:''),barangay:clean(c.barangay>=0?r[c.barangay]:''),napCode:clean(c.napCode>=0?r[c.napCode]:''),dateEndorsed:dt(c.endorsed>=0?r[c.endorsed]:'')?.toISOString()||'',duration:clean(c.duration>=0?r[c.duration]:''),finding:clean(c.finding>=0?r[c.finding]:''),sourceStatus:clean(c.status>=0?r[c.status]:'')})}return out}
 function reconcileBrowser(db,n){const out=[];let matched=0;for(const x of n){let best=null;for(const r of db){if(x.province&&r.province&&norm(x.province)!==norm(r.province))continue;if(x.municipality&&r.municipality&&norm(x.municipality)!==norm(r.municipality))continue;let score=20,method=[];const nc=compact(x.napCode),rf=compact(r.facility);if(nc&&rf&&(nc===rf||rf.includes(nc)||nc.includes(rf))){score+=120;method.push('code')}if(x.finding&&r.napStatus&&norm(x.finding)===norm(r.napStatus)){score+=70;method.push('finding')}if(x.barangay&&r.barangay&&norm(x.barangay)===norm(r.barangay)){score+=40;method.push('barangay')}const xd=dt(x.dateEndorsed),rd=dt(r.dateEndorsed);if(xd&&rd){const diff=Math.abs(xd-rd)/60000;if(diff<=15){score+=80;method.push('date±15m')}else if(diff<=60){score+=65;method.push('date±1h')}else if(dayKey(xd)===dayKey(rd)){score+=45;method.push('same-day')}}if(norm(r.finalStatus)==='PENDING')score+=3;if(!best||score>best.score)best={row:r,score,method:method.join('+')||'area'}}const ok=!!best&&best.score>=70;if(ok)matched++;const r=ok?best.row:null,fs=r?r.finalStatus:(x.sourceStatus||'PENDING');let down=r?.downHours||null;if(down==null&&x.duration){const m=clean(x.duration).match(/(\d+)\s*days?/i),h=clean(x.duration).match(/(\d+)\s*hours?/i);down=(m?Number(m[1])*24:0)+(h?Number(h[1]):0)}out.push({...x,finalStatus:fs,status:fs,statusSource:r?'DATABASE FINAL STATUS':'NAP DOWN SOURCE',matchScore:ok?best.score:0,matchMethod:ok?best.method:'unmatched',matchedDbRow:r?.rowNumber||null,concern:r?.concern||'Unspecified',rfo:r?.rfo||'',ospTeam:r?.ospTeam||'',etr:r?.etr||'',dateEndorsed:r?.dateEndorsed||x.dateEndorsed,dateRestored:r?.dateRestored||'',downHours:down,upHours:r?.upHours??(r?.dateRestored?hours(r.dateRestored):null),finding:x.finding||r?.finding||r?.napStatus||'Blank',open:fs!=='BLANK'&&!TERMINAL.has(norm(fs)),restored:norm(fs)==='RESTORED'})}return{out,matched}}
 function browserBuild(dbRaw,napRaw){const db=browserDb(dbRaw),n=browserNap(napRaw),rec=reconcileBrowser(db,n),sc=statusCounts(db),nc=statusCounts(rec.out),opts={province:uniq(db.map(r=>r.province)),status:uniq(Object.keys(sc)),finding:uniq(db.map(r=>r.finding).concat(rec.out.map(r=>r.finding))),rfo:uniq(db.map(r=>r.rfo)),concern:uniq(db.map(r=>r.concern))};return{ok:true,version:'browser-'+Date.now(),sourceMode:'browser-published',rows:db,napDownRows:rec.out,statusCounts:sc,napStatusCounts:nc,pendingCount:sc.PENDING||0,napDownSheetCount:n.length,napDownPendingCount:nc.PENDING||0,reconciliation:{dbPending:sc.PENDING||0,napPending:nc.PENDING||0,dbRows:db.length,napRows:n.length,matchedNapRows:rec.matched,unmatchedNapRows:n.length-rec.matched},options:opts,pendingReconciliation:(sc.PENDING||0)===(nc.PENDING||0)&&rec.matched===n.length}}
-async function loadData(){if(S.loading)return;S.loading=true;try{let apiError='';try{S.snap=await withTimeout(json('/api/snapshot?ts='+Date.now(),{cache:'no-store'}),14000);S.sync=new Date();setAlert('');render();return}catch(e){apiError=e.message}try{const [db,nap]=await Promise.all([publicRows(PUBLIC_GID_DB),publicRows(PUBLIC_GID_NAP).catch(()=>[])]);S.snap=browserBuild(db,nap);S.sync=new Date();setAlert('');render();setInfo('Direct published Google Sheets recovery is active.');return}catch(e){setAlert('Live source failed: '+apiError+' • Browser recovery: '+e.message)}}finally{S.loading=false}}
+function setAgentBadge(state,text){
+  const e=$('agentStatus');if(!e)return;
+  e.className='agent-badge '+(state==='SYNCED'?'ok':state==='SOURCE_ERROR'||state==='AUTH_REQUIRED'?'bad':'attention');
+  e.innerHTML='<i></i><span>SYNC AGENT • '+esc(text)+'</span>';
+}
+async function runSyncAgent(){
+  try{
+    const j=await withTimeout(json('/api/agent?mode=sync&ts='+Date.now(),{cache:'no-store'}),10000);
+    S.agent=j.report||{syncState:j.configured? (j.healthy?'SYNCED':'SOURCE_ERROR'):'AUTH_REQUIRED'};
+    if(!j.configured){setAgentBadge('AUTH_REQUIRED','AUTH REQUIRED');return j}
+    if(!j.healthy){setAgentBadge('SOURCE_ERROR','SOURCE ERROR');return j}
+    const r=j.report||{};
+    const currentDb=S.snap?.rows?.length;
+    const currentNap=S.snap?.napDownRows?.length;
+    const mismatch=(Number.isFinite(currentDb)&&currentDb!==r.database.rows)||(Number.isFinite(currentNap)&&currentNap!==r.napDown.rows);
+    setAgentBadge('SYNCED','SYNCED');
+    if(mismatch&&!S.loading){await loadData(true)}
+    return j;
+  }catch(e){
+    S.agent={syncState:'SOURCE_ERROR',message:e.message};
+    setAgentBadge('SOURCE_ERROR','SOURCE ERROR');
+    return null;
+  }
+}
+async function loadData(force=false){
+  if(S.loading&&!force)return;
+  S.loading=true;
+  try{
+    let apiError='';
+    try{
+      const url='/api/snapshot?ts='+Date.now()+(force?'&refresh=1':'');
+      const j=await withTimeout(json(url,{cache:'no-store'}),14000);
+      S.snap=j;S.sync=new Date();
+      if(j.sourceMode==='google-sheets-api'){
+        S.agent={...(S.agent||{}),syncState:'SYNCED'};
+        setAgentBadge('SYNCED','SYNCED');
+      }else{
+        S.agent={...(S.agent||{}),syncState:'AUTH_REQUIRED'};
+        setAgentBadge('AUTH_REQUIRED','SOURCE NOT DIRECT');
+        setInfo('The dashboard is reading the published Google feed because the direct Google Sheets API is not configured in this Vercel deployment. The published feed may lag behind the live spreadsheet.');
+      }
+      setAlert('');render();return;
+    }catch(e){apiError=e.message}
+    try{
+      const [db,nap]=await Promise.all([publicRows(PUBLIC_GID_DB),publicRows(PUBLIC_GID_NAP).catch(()=>[])]);
+      S.snap=browserBuild(db,nap);S.sync=new Date();
+      S.agent={syncState:'AUTH_REQUIRED'};
+      setAgentBadge('AUTH_REQUIRED','SOURCE NOT DIRECT');
+      setAlert('');
+      render();
+      setInfo('Published Google feed recovery is active. It is read-only and may lag behind the live spreadsheet. Direct Sheets API sync is required for exact live counts.');
+    }catch(e){
+      setAgentBadge('SOURCE_ERROR','SOURCE ERROR');
+      setAlert('Live source failed: '+apiError+' • Browser recovery: '+e.message);
+    }
+  }finally{S.loading=false}
+}
 async function agent(action){const token=prompt('NOC_AGENT_TOKEN');if(!token)return;try{const j=await json('/api/agent',{method:'POST',headers:{'Content-Type':'application/json','x-noc-agent-token':token},body:JSON.stringify({action})});alert(action==='audit'?'Formula audit completed: '+(j.issues?.length||0)+' issues.':'Repair completed: '+(j.repairedRuns||0)+' runs.');await loadData()}catch(e){alert(e.message)}}
 ['province','status','finding','rfo','concern','period'].forEach(id=>$(id).addEventListener('change',()=>{S.filters[id]=$(id).value;render()}));
+$('month').addEventListener('change',async()=>{S.filters.month=$('month').value;S.filters.date='ALL';syncDateSelectors();render();await loadData(true);});
+$('date').addEventListener('change',async()=>{S.filters.date=$('date').value;S.filters.period='ALL';render();await loadData(true);});
 $('audit').onclick=()=>agent('audit');$('repair').onclick=()=>agent('repair');
-loadData();setInterval(()=>{if(!document.hidden)loadData()},REFRESH);document.addEventListener('visibilitychange',()=>{if(!document.hidden)loadData()});
+loadData();runSyncAgent();setInterval(()=>{if(!document.hidden){loadData();runSyncAgent()}},REFRESH);setInterval(()=>{if(!document.hidden)runSyncAgent()},30000);document.addEventListener('visibilitychange',()=>{if(!document.hidden){loadData(true);runSyncAgent()}});
 </script>
 </body>
 </html>
