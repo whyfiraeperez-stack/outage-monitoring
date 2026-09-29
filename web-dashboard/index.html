@@ -3,11 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>NAP NOC Operations Dashboard</title>
+<title>BICOL NAP OUTAGE MONITORING</title>
 <style>
 :root{
-  --bg:#f5f7fa;--surface:#fff;--surface-2:#f8fafc;--line:#dfe5eb;--text:#17212b;--muted:#6b7785;
-  --navy:#173a5e;--green:#147a52;--red:#b33a4a;--amber:#a96900;--blue:#2d6fa7;--shadow:0 2px 12px rgba(20,35,50,.04)
+  --bg:#f4f8f8;--surface:#fff;--surface-2:#f7fbfb;--line:#d7e6e4;--text:#132a2b;--muted:#627475;
+  --brand:#008d87;--brand-dark:#006f6b;--brand-deep:#004e4a;--brand-soft:#e8f6f4;--brand-line:#bcdad7;
+  --green:#147a52;--red:#b33a4a;--amber:#a96900;--blue:#0b7480;--shadow:0 2px 12px rgba(0,77,73,.06)
 }
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--text);font:13px/1.45 Arial,Helvetica,sans-serif}
@@ -15,32 +16,32 @@ body{padding:18px}
 main{max-width:1680px;margin:0 auto}
 .top{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin-bottom:14px}
 .brand{display:flex;gap:11px;align-items:flex-start}
-.mark{width:4px;height:42px;border-radius:4px;background:var(--navy);margin-top:2px}
-h1{font-size:22px;line-height:1.15;margin:0;font-weight:800}
-.subtitle{margin-top:5px;color:var(--muted);font-size:10px}
+.brand-logo{width:72px;height:72px;object-fit:contain;display:block;flex:0 0 72px}.mark{display:none}
+h1{font-size:22px;line-height:1.15;margin:0;font-weight:850;color:var(--brand-deep);letter-spacing:.15px}
+.subtitle{margin-top:5px;color:var(--muted);font-size:10px}.brand-accent{color:var(--brand);font-weight:800}
 .top-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
 .pill{display:inline-flex;align-items:center;gap:6px;padding:8px 11px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:9px;font-weight:800;color:#384653}
 .pill i{width:7px;height:7px;border-radius:50%;background:#adb8c3;display:inline-block}
-.pill.ok{background:#eef9f3;border-color:#cde9da;color:var(--green)}.pill.ok i{background:#2fa16a}
+.pill.ok{background:var(--brand-soft);border-color:var(--brand-line);color:var(--brand-deep)}.pill.ok i{background:var(--brand)}
 .pill.bad{background:#fff1f3;border-color:#efc9cf;color:#92293a}.pill.bad i{background:#c83d50}
 .pill.info{background:#f2f7fb;border-color:#d8e7f3;color:#2e607e}.pill.info i{background:#6c9fc1}
 .time{font-size:9px;color:var(--muted)}
-.control{display:flex;flex-direction:column;gap:4px}.control label{font-size:8px;font-weight:800;color:var(--muted);letter-spacing:.55px}.control select{height:34px;min-width:145px;border:1px solid #cfd7df;border-radius:7px;background:#fff;padding:0 9px;color:#20303e;font-size:10px}
+.control{display:flex;flex-direction:column;gap:4px}.control label{font-size:8px;font-weight:800;color:var(--muted);letter-spacing:.55px}.control select{height:34px;min-width:145px;border:1px solid #c6d7d5;border-radius:7px;background:#fff;padding:0 9px;color:#20303e;font-size:10px;outline:none}.control select:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(0,141,135,.10)}
 .info,.alert{padding:10px 12px;border-radius:8px;margin-bottom:10px;font-size:10px;display:none;white-space:pre-wrap}
 .info{background:#f0f6fb;border:1px solid #d6e5f1;color:#28526f}.alert{background:#fff1f3;border:1px solid #efc9cf;color:#8f2b3a}
-.filters{display:grid;grid-template-columns:repeat(6,minmax(120px,1fr));gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px;box-shadow:var(--shadow)}
+.filters{display:grid;grid-template-columns:repeat(6,minmax(120px,1fr));gap:8px;background:var(--surface);border:1px solid var(--line);border-top:3px solid var(--brand);border-radius:10px;padding:10px;box-shadow:var(--shadow)}
 .meta{padding:8px 1px 10px;color:var(--muted);font-size:9px}.meta b{color:#273744}
 .kpis{display:grid;grid-template-columns:repeat(3,minmax(200px,1fr));gap:10px}
 .kpi{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;box-shadow:var(--shadow)}
 .kpi .label{font-size:8px;font-weight:800;letter-spacing:.6px;color:var(--muted)}
 .kpi .value{font-size:30px;line-height:1;margin-top:7px;font-weight:850}
 .kpi .note{font-size:8.5px;color:var(--muted);margin-top:6px}
-.kpi.pending{border-top:3px solid var(--red)}.kpi.restored{border-top:3px solid var(--green)}.kpi.nap{border-top:3px solid var(--blue)}
+.kpi.pending{border-top:3px solid var(--red)}.kpi.restored{border-top:3px solid var(--brand)}.kpi.nap{border-top:3px solid var(--blue)}
 .grid{display:block;margin-top:10px}.grid > .panel + .panel{margin-top:18px}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;box-shadow:var(--shadow);min-width:0}
 .panel-head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
-.panel h2{font-size:12px;margin:0}.panel .desc{font-size:9px;color:var(--muted);margin-top:3px}
-.chart{min-height:265px;display:flex;align-items:center;justify-content:center}
+.panel h2{font-size:12px;margin:0;color:var(--brand-deep)}.panel .desc{font-size:9px;color:var(--muted);margin-top:3px}
+.chart{min-height:265px;display:flex;align-items:center;justify-content:center}.panel{overflow:hidden}
 .donut-wrap{display:flex;align-items:center;justify-content:center;gap:24px;width:100%}
 .donut{width:190px;height:190px;border-radius:50%;position:relative;flex:0 0 190px;background:#e7edf2}
 .donut:after{content:"";position:absolute;inset:43px;background:#fff;border-radius:50%;box-shadow:0 0 0 1px #eef1f4}
@@ -50,24 +51,24 @@ h1{font-size:22px;line-height:1.15;margin:0;font-weight:800}
 .nap-table-wrap{overflow:hidden;border:1px solid var(--line);border-radius:8px;margin-top:10px}
 .nap-table{width:100%;table-layout:fixed;border-collapse:collapse}
 .nap-table th,.nap-table td{padding:8px 7px;border-bottom:1px solid #edf0f4;text-align:left;vertical-align:top;overflow-wrap:anywhere;word-break:break-word}
-.nap-table th{position:sticky;top:0;background:#f7f9fb;z-index:2;color:#687585;font-size:8px;text-transform:uppercase;letter-spacing:.45px}
+.nap-table th{position:sticky;top:0;background:var(--brand-soft);z-index:2;color:var(--brand-deep);font-size:8px;text-transform:uppercase;letter-spacing:.45px}
 .nap-table td{font-size:8.5px;white-space:normal}
 .nap-table th:nth-child(1){width:11%}.nap-table th:nth-child(2){width:11%}.nap-table th:nth-child(3){width:11%}.nap-table th:nth-child(4){width:13%}
 .nap-table th:nth-child(5){width:15%}.nap-table th:nth-child(6){width:13%}.nap-table th:nth-child(7){width:9%}.nap-table th:nth-child(8){width:17%}
 .nap-table td.finding{white-space:normal}.nap-table td.duration{font-weight:800}
 .nap-filters{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;margin-top:10px;padding:8px;background:#f8fafc;border:1px solid #e7ecf1;border-radius:8px}
-.nap-filter{display:flex;flex-direction:column;gap:4px}.nap-filter label{font-size:7px;font-weight:800;color:var(--muted);letter-spacing:.5px}.nap-filter select{height:31px;border:1px solid #cfd7df;border-radius:6px;background:#fff;padding:0 8px;font-size:9px;color:#24313d}
-.nap-clear{height:31px;align-self:end;border:1px solid #cfd7df;border-radius:6px;background:#fff;padding:0 10px;font-size:9px;font-weight:700;color:#44515d;cursor:pointer}
+.nap-filter{display:flex;flex-direction:column;gap:4px}.nap-filter label{font-size:7px;font-weight:800;color:var(--muted);letter-spacing:.5px}.nap-filter select{height:31px;border:1px solid #c6d7d5;border-radius:6px;background:#fff;padding:0 8px;font-size:9px;color:#24313d;outline:none}.nap-filter select:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(0,141,135,.08)}
+.nap-clear{height:31px;align-self:end;border:1px solid var(--brand-line);border-radius:6px;background:#fff;padding:0 10px;font-size:9px;font-weight:800;color:var(--brand-deep);cursor:pointer}.nap-clear:hover{background:var(--brand-soft);border-color:var(--brand)}
 .nap-filter-meta{margin-top:6px;font-size:8px;color:var(--muted)}
-.nap-countbar{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:10px;padding:8px 10px;background:#f8fafc;border:1px solid #e7ecf1;border-radius:8px}
-.nap-countbar .count{font-size:9px;font-weight:800;letter-spacing:.4px}.nap-countbar .count b{font-size:16px;margin-left:4px}.nap-countbar .sort-note{font-size:8px;color:var(--muted);text-align:right}
+.nap-countbar{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:10px;padding:8px 10px;background:var(--brand-soft);border:1px solid var(--brand-line);border-radius:8px}
+.nap-countbar .count{font-size:9px;font-weight:850;letter-spacing:.4px;color:var(--brand-deep)}.nap-countbar .count b{font-size:16px;margin-left:4px}.nap-countbar .sort-note{font-size:8px;color:var(--muted);text-align:right}
 .nap-summary-wrap{margin-top:8px;border:1px solid var(--line);border-radius:8px;overflow:hidden}
 .nap-summary{width:100%;border-collapse:collapse;table-layout:fixed}.nap-summary th,.nap-summary td{padding:7px 8px;border-bottom:1px solid #edf0f4;font-size:8.5px;text-align:left}
-.nap-summary th{background:#f7f9fb;color:#687585;font-size:8px;text-transform:uppercase;letter-spacing:.45px}.nap-summary td:last-child,.nap-summary th:last-child{text-align:right;width:12%}
+.nap-summary th{background:var(--brand-soft);color:var(--brand-deep);font-size:8px;text-transform:uppercase;letter-spacing:.45px}.nap-summary td:last-child,.nap-summary th:last-child{text-align:right;width:12%}
 .nap-summary td:nth-child(1){width:30%}.nap-summary td:nth-child(2){width:58%}
 .note-line{font-size:8px;color:var(--muted);margin-top:8px}
 .empty{padding:24px;text-align:center;color:#7c8996;font-size:9px}
-.data-health{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.data-health{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}.health-card{transition:border-color .15s ease,box-shadow .15s ease}.health-card:hover{border-color:var(--brand-line);box-shadow:0 2px 8px rgba(0,77,73,.05)}
 .health-card{background:var(--surface-2);border:1px solid #e8edf2;border-radius:8px;padding:9px}.health-card small{display:block;color:var(--muted);font-size:8px}.health-card b{font-size:13px;margin-top:3px;display:block}
 footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;color:#7c8996;font-size:8px}
 .loading{padding:30px;text-align:center;color:var(--muted);font-size:10px}
@@ -79,10 +80,10 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;co
 <main>
 <header class="top">
   <div class="brand">
-    <div class="mark"></div>
+    <img class="brand-logo" src="https://content.convergeict.com/assets/25c65629-d1ee-43a3-82bd-5bed31ecbf06.svg" alt="Converge">
     <div>
-      <h1>NAP NOC Operations Dashboard</h1>
-      <div class="subtitle">Spreadsheet-first monitoring • DATABASE FINAL STATUS + NAP DOWN</div>
+      <h1>BICOL NAP OUTAGE MONITORING</h1>
+      <div class="subtitle"><span class="brand-accent">Converge ICT</span> • Spreadsheet-first monitoring • DATABASE FINAL STATUS + NAP DOWN</div>
     </div>
   </div>
   <div class="top-right">
@@ -253,7 +254,7 @@ function matchNap(r){
 function chart(counts,total){
   const entries=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
   if(!total)return'<div class="empty">No rows match the current filters.</div>';
-  const palette=['#173a5e','#2d6fa7','#147a52','#6c879d','#b07b2b','#8f6fb5','#b33a4a','#557d71','#7b8792','#6e9f75'];
+  const palette=['#004e4a','#008d87','#1aa49d','#0b7480','#62aaa6','#6d8f95','#8c9fa2','#b07b2b','#b33a4a','#7a6aa6'];
   let start=0;
   const segments=[];
   entries.forEach(([,v],i)=>{const end=start+(v/total)*100;segments.push(palette[i%palette.length]+' '+start+'% '+end+'%');start=end});
