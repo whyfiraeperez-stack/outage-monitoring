@@ -297,7 +297,7 @@ function render(){
   $('dbRows').textContent=fmt(S.snap?.diagnostics?.databaseRows);
   $('formulaErrors').textContent=fmt(S.snap?.diagnostics?.formulaErrors);
   $('lastVerified').textContent=S.snap?.checkedAt?new Date(S.snap.checkedAt).toLocaleTimeString():'—';
-  $('meta').innerHTML='DATABASE FINAL STATUS: <b>'+fmt(total)+' filtered rows</b> • PENDING: <b>'+fmt(pending)+'</b> • RESTORED: <b>'+fmt(restored)+'</b> • RESTORED ON SELECTED DATE: <b>'+fmt(restoredDayRows.length)+'</b> • '+(S.filters.date==='ALL'?'All endorsed dates':dateLabel(S.filters.date));
+
 
   const rows=nap.slice().sort((a,b)=>{
     const province=clean(a.province).localeCompare(clean(b.province),undefined,{sensitivity:'base'});
