@@ -219,13 +219,12 @@ async function getSnapshot({force = false} = {}) {
   if (inflight) return inflight;
 
   inflight = (async () => {
-    const diagnostics = credentialDiagnostics();
-    if (!diagnostics.configured) {
-      const error = Object.assign(new Error(diagnostics.error), {code: diagnostics.source});
-      throw error;
-    }
-
     try {
+      const diagnostics = credentialDiagnostics();
+      if (!diagnostics.configured) {
+        throw Object.assign(new Error(diagnostics.error), {code: diagnostics.source});
+      }
+
       const raw = await readDirectRaw();
       const {build} = require('./noc.cjs');
       const fingerprint = crypto.createHash('sha256')
@@ -264,7 +263,10 @@ async function getSnapshot({force = false} = {}) {
       return result;
     } catch (error) {
       const info = apiErrorInfo(error);
-      error.noc = info;
+      const nocCode = String(error?.code || '');
+      error.noc = ['MISSING_CREDENTIAL','INVALID_CREDENTIAL','SCHEMA_INVALID','SHEET_RANGE_MISSING'].includes(nocCode)
+        ? {code:nocCode,status:null,reason:null,message:String(error?.message||'')}
+        : info;
       throw error;
     } finally {
       inflight = null;

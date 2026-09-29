@@ -179,12 +179,19 @@ function syncFilters(){
   const o=S.snap?.options||{};
   setSelect('province',o.province);setSelect('status',o.status);setSelect('finding',o.finding);setSelect('rfo',o.rfo);setSelect('concern',o.concern);syncDateSelects();
 }
-function match(r){
+function matchDb(r){
   if(S.filters.province!=='ALL'&&r.province!==S.filters.province)return false;
   if(S.filters.status!=='ALL'&&norm(r.finalStatus)!==norm(S.filters.status))return false;
   if(S.filters.finding!=='ALL'&&r.finding!==S.filters.finding)return false;
   if(S.filters.rfo!=='ALL'&&r.rfo!==S.filters.rfo)return false;
   if(S.filters.concern!=='ALL'&&r.concern!==S.filters.concern)return false;
+  if(S.filters.date!=='ALL'&&dayKey(r.dateEndorsed)!==S.filters.date)return false;
+  if(S.filters.month!=='ALL'&&!dayKey(r.dateEndorsed).startsWith(S.filters.month))return false;
+  return true;
+}
+function matchNap(r){
+  if(S.filters.province!=='ALL'&&r.province!==S.filters.province)return false;
+  if(S.filters.finding!=='ALL'&&r.finding!==S.filters.finding)return false;
   if(S.filters.date!=='ALL'&&dayKey(r.dateEndorsed)!==S.filters.date)return false;
   if(S.filters.month!=='ALL'&&!dayKey(r.dateEndorsed).startsWith(S.filters.month))return false;
   return true;
@@ -201,8 +208,8 @@ function chart(counts,total){
 }
 function render(){
   syncFilters();
-  const db=(S.snap?.rows||[]).filter(match);
-  const nap=(S.snap?.napDownRows||[]).filter(match);
+  const db=(S.snap?.rows||[]).filter(matchDb);
+  const nap=(S.snap?.napDownRows||[]).filter(matchNap);
   const counts={};db.forEach(r=>{const s=clean(r.finalStatus)||'BLANK';counts[s]=(counts[s]||0)+1});
   const total=db.length;
   const pending=db.filter(r=>norm(r.finalStatus)==='PENDING').length;
