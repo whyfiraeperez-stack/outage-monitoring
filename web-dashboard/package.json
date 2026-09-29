@@ -1,13 +1,13 @@
 {
   "name": "nap-noc-static-vercel",
   "private": true,
-  "version": "4.0.0",
+  "version": "4.0.1",
   "engines": {
     "node": "22.x"
   },
   "scripts": {
-    "build": "node -e \"console.log('NAP NOC dashboard build ready')\",
-    "start": "node -e \"console.log('Static Vercel deployment')\"
+    "build": "node -e \"console.log('NAP NOC dashboard build ready')\"",
+    "start": "node -e \"console.log('Static Vercel deployment')\""
   },
   "dependencies": {
     "googleapis": "^160.0.0"
