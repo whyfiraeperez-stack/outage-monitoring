@@ -3,267 +3,259 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>NAP NOC Live Monitoring</title>
+<title>NAP NOC Operations Dashboard</title>
 <style>
-:root{--bg:#f4f7fa;--card:#fff;--line:#d8e0e8;--text:#142131;--muted:#687789;--navy:#153a5b;--red:#c83d50;--amber:#b26b00;--green:#187b52;--blue:#1769aa;--purple:#7654b7}
-*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font:13px/1.45 Arial,Helvetica,sans-serif}body{padding:14px}main{max-width:1750px;margin:auto}
-.top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:4px 0 12px}.brand{display:flex;gap:10px;align-items:flex-start}.mark{width:4px;height:36px;background:var(--navy);border-radius:4px}.top h1{margin:0;font-size:20px}.top p{margin:4px 0 0;color:var(--muted);font-size:10px}
-.top-right{display:flex;align-items:flex-start;gap:7px;flex-wrap:wrap;justify-content:flex-end}.report-control{display:flex;flex-direction:column;gap:3px}.report-control span{font-size:7px;color:#74808e;font-weight:800;letter-spacing:.6px}.report-control select{height:32px;min-width:118px;border:1px solid #cbd5df;border-radius:6px;background:#fff;padding:0 8px;font-size:9px;color:#172533}
-.agent-badge{display:flex;align-items:center;gap:5px;padding:8px 10px;border-radius:999px;font-size:8px;font-weight:800;letter-spacing:.2px;white-space:nowrap;border:1px solid #f1d19d;background:#fff7e7;color:#8a5a00}.agent-badge i{display:inline-block;width:7px;height:7px;border-radius:50%;background:#d49a27}.agent-badge.ok{border-color:#c9eadb;background:#eefaf4;color:#187b52}.agent-badge.ok i{background:#31a56d}.agent-badge.bad{border-color:#efc7ce;background:#fff1f3;color:#8b2637}.agent-badge.bad i{background:#c83d50}
-.live{padding:7px 11px;border:1px solid #c9eadb;background:#eefaf4;color:var(--green);border-radius:999px;font-size:9px;font-weight:800;white-space:nowrap}.live i{display:inline-block;width:7px;height:7px;border-radius:50%;background:#31a56d;margin-right:6px}
-.alert,.info{display:none;padding:9px 11px;border-radius:7px;font-size:10px;margin-bottom:8px}.alert{border:1px solid #efc7ce;background:#fff1f3;color:#8b2637}.info{border:1px solid #d6e3ef;background:#f1f7fc;color:#245273}
-.filters{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;background:#fff;border:1px solid var(--line);border-radius:9px;padding:9px}.filter span{display:block;color:#6d7887;font-size:8px;font-weight:800;letter-spacing:.55px;margin-bottom:4px}.filter select{width:100%;height:32px;border:1px solid #cbd5df;border-radius:6px;background:#fff;padding:0 8px;font-size:10px;color:#172533}
-.meta{padding:7px 1px;font-size:9px;color:var(--muted)}.meta b{color:#273745}
-.kpis{display:grid;grid-template-columns:repeat(2,minmax(220px,300px));gap:8px}.kpi{background:#fff;border:1px solid var(--line);border-radius:9px;padding:10px 11px;min-height:92px}.kpi.red{border-top:3px solid var(--red)}.kpi.amber{border-top:3px solid var(--amber)}.kpi.green{border-top:3px solid var(--green)}.kpi.blue{border-top:3px solid var(--blue)}.kpi.purple{border-top:3px solid var(--purple)}
-.k-label{font-size:8px;color:#74808e;font-weight:800;letter-spacing:.65px}.k-value{font-size:27px;font-weight:850;line-height:1.1;margin-top:7px}.k-note{font-size:8.5px;color:var(--muted);margin-top:5px}
-.grid{display:grid;gap:8px;margin-top:8px}.two{grid-template-columns:1.35fr 1fr}.three{grid-template-columns:1fr 1fr 1fr}
-.panel{background:#fff;border:1px solid var(--line);border-radius:9px;padding:10px;min-width:0}.panel h2{font-size:12px;margin:0}.panel p{margin:3px 0 7px;font-size:8.5px;color:var(--muted)}
-.chart{min-height:245px}.svg{width:100%;height:245px;display:block}
-.donut-wrap{display:flex;align-items:center;justify-content:center;gap:22px;min-height:245px;padding:8px 6px}
-.nap-summary{display:grid;grid-template-columns:170px 1fr;gap:14px;align-items:stretch}
-.nap-total{border:1px solid var(--line);background:#fff;display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:150px}
-.nap-total .title{font-size:12px;font-weight:800;letter-spacing:.4px;color:#187b52;margin-bottom:8px}
-.nap-total .number{font-size:68px;font-weight:800;line-height:1;color:#1f2731}
-.nap-table-wrap{overflow:auto;border:1px solid var(--line);border-radius:7px;max-height:520px}
-.nap-table{width:100%;min-width:1180px;border-collapse:collapse}
-.nap-table th,.nap-table td{padding:7px 8px;border-bottom:1px solid #edf0f4;white-space:nowrap;text-align:left}
-.nap-table th{position:sticky;top:0;background:#f7f9fb;z-index:2;color:#6d7887;font-size:8px;text-transform:uppercase}
-.nap-table td{font-size:9px}
-.nap-table td.duration{font-weight:700}
-.donut{width:185px;height:185px;border-radius:50%;position:relative;flex:0 0 185px;box-shadow:inset 0 0 0 1px #edf0f4}
-.donut::after{content:"";position:absolute;inset:42px;background:#fff;border-radius:50%;box-shadow:0 0 0 1px #eef1f4}
-.donut-center{position:absolute;z-index:1;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
-.donut-center small{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
-.donut-center b{font-size:24px;line-height:1.1;margin-top:3px}
-.donut-legend{display:grid;gap:7px;min-width:220px;max-width:310px;flex:1}
-.legend-row{display:grid;grid-template-columns:9px 1fr auto;gap:7px;align-items:center;font-size:8.5px}
-.legend-dot{width:8px;height:8px;border-radius:50%}
-.legend-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.legend-value{font-weight:800;color:#243344}
-.legend-share{color:var(--muted);margin-left:4px;font-weight:400}
-.legend-empty{color:#8190a0;text-align:center;font-size:10px;padding:45px 10px}
-.status-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.status-row{border:1px solid #edf0f4;border-radius:7px;padding:7px 8px;background:#fbfcfd}.status-head{display:flex;justify-content:space-between;gap:8px;font-size:9px}.status-head b{font-size:10px}.bar{height:7px;border-radius:99px;background:#e9eef3;overflow:hidden;margin-top:5px}.bar i{display:block;height:100%;border-radius:99px}
-.stack-list{display:grid;gap:7px}.stack-item{display:grid;grid-template-columns:120px 1fr 45px;gap:8px;align-items:center;font-size:8.5px}.stack-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.stack{height:18px;background:#eef2f5;border-radius:4px;display:flex;overflow:hidden}.seg{height:100%}.seg.a{background:#4f9a78}.seg.b{background:#4c97bb}.seg.c{background:#d49a27}.seg.d{background:#c55a66}.seg.u{background:#cfd7df}
-.finding-list{display:grid;gap:6px}.finding-row{display:grid;grid-template-columns:150px 1fr 45px;gap:8px;align-items:center;font-size:8.5px}.finding-row .name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.finding-row .bar i{background:#7654b7}
-.metric-bars{display:grid;gap:7px}.metric-row{display:grid;grid-template-columns:120px 1fr 70px;gap:8px;align-items:center;font-size:8.5px}.metric-track{height:8px;border-radius:99px;background:#eef2f5;overflow:hidden;display:flex}.metric-track .avg{background:#c86c77}.metric-track .med{background:#1769aa}
-.queue-wrap{margin-top:8px;overflow:auto;max-height:500px;border:1px solid var(--line);border-radius:7px}.queue{width:100%;min-width:1600px;border-collapse:collapse}.queue th,.queue td{padding:7px 8px;border-bottom:1px solid #edf0f4;white-space:nowrap;text-align:left}.queue th{position:sticky;top:0;background:#f7f9fb;z-index:2;font-size:8px;text-transform:uppercase;color:#6d7887}.queue td{font-size:9px}.badge{display:inline-block;padding:2px 6px;border-radius:999px;font-size:8px;font-weight:800}.pending{background:#fff0f2;color:#a62f40}.restored{background:#eaf8f0;color:#187b52}.other{background:#eef4fb;color:#28577f}.unmatched{background:#fff7e8;color:#8a5a00}
-.recon{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}.recon-card{border:1px solid #edf0f4;background:#fbfcfd;border-radius:7px;padding:7px 8px}.recon-card small{display:block;color:var(--muted);font-size:8px}.recon-card b{font-size:16px}
-.actions{display:flex;gap:6px;justify-content:flex-end}.actions button{border:1px solid #cbd5df;background:#fff;border-radius:6px;padding:7px 9px;font-size:9px;font-weight:700;color:#344453;cursor:pointer}.actions button:hover{background:#f2f6fa}
-.empty{padding:18px;text-align:center;color:#7a8795;font-size:9px}footer{display:flex;justify-content:space-between;gap:12px;color:#7a8795;font-size:8px;padding:8px 1px}
-@media(max-width:1250px){.two,.three{grid-template-columns:1fr}.filters{grid-template-columns:repeat(3,1fr)}}@media(max-width:720px){body{padding:8px}.top{display:block}.live{display:inline-block;margin-top:8px}.filters{grid-template-columns:1fr}.kpis{grid-template-columns:1fr}}
+:root{
+  --bg:#f5f7fa;--surface:#fff;--surface-2:#f8fafc;--line:#dfe5eb;--text:#17212b;--muted:#6b7785;
+  --navy:#173a5e;--green:#147a52;--red:#b33a4a;--amber:#a96900;--blue:#2d6fa7;--shadow:0 2px 12px rgba(20,35,50,.04)
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font:13px/1.45 Arial,Helvetica,sans-serif}
+body{padding:18px}
+main{max-width:1680px;margin:0 auto}
+.top{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin-bottom:14px}
+.brand{display:flex;gap:11px;align-items:flex-start}
+.mark{width:4px;height:42px;border-radius:4px;background:var(--navy);margin-top:2px}
+h1{font-size:22px;line-height:1.15;margin:0;font-weight:800}
+.subtitle{margin-top:5px;color:var(--muted);font-size:10px}
+.top-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:8px 11px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:9px;font-weight:800;color:#384653}
+.pill i{width:7px;height:7px;border-radius:50%;background:#adb8c3;display:inline-block}
+.pill.ok{background:#eef9f3;border-color:#cde9da;color:var(--green)}.pill.ok i{background:#2fa16a}
+.pill.bad{background:#fff1f3;border-color:#efc9cf;color:#92293a}.pill.bad i{background:#c83d50}
+.pill.info{background:#f2f7fb;border-color:#d8e7f3;color:#2e607e}.pill.info i{background:#6c9fc1}
+.time{font-size:9px;color:var(--muted)}
+.control{display:flex;flex-direction:column;gap:4px}.control label{font-size:8px;font-weight:800;color:var(--muted);letter-spacing:.55px}.control select{height:34px;min-width:145px;border:1px solid #cfd7df;border-radius:7px;background:#fff;padding:0 9px;color:#20303e;font-size:10px}
+.info,.alert{padding:10px 12px;border-radius:8px;margin-bottom:10px;font-size:10px;display:none;white-space:pre-wrap}
+.info{background:#f0f6fb;border:1px solid #d6e5f1;color:#28526f}.alert{background:#fff1f3;border:1px solid #efc9cf;color:#8f2b3a}
+.filters{display:grid;grid-template-columns:repeat(6,minmax(120px,1fr));gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px;box-shadow:var(--shadow)}
+.meta{padding:8px 1px 10px;color:var(--muted);font-size:9px}.meta b{color:#273744}
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(220px,1fr));gap:10px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;box-shadow:var(--shadow)}
+.kpi .label{font-size:8px;font-weight:800;letter-spacing:.6px;color:var(--muted)}
+.kpi .value{font-size:30px;line-height:1;margin-top:7px;font-weight:850}
+.kpi .note{font-size:8.5px;color:var(--muted);margin-top:6px}
+.kpi.pending{border-top:3px solid var(--red)}.kpi.restored{border-top:3px solid var(--green)}.kpi.nap{border-top:3px solid var(--blue)}
+.grid{display:grid;grid-template-columns:1fr 1.25fr;gap:10px;margin-top:10px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;box-shadow:var(--shadow);min-width:0}
+.panel-head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.panel h2{font-size:12px;margin:0}.panel .desc{font-size:9px;color:var(--muted);margin-top:3px}
+.chart{min-height:265px;display:flex;align-items:center;justify-content:center}
+.donut-wrap{display:flex;align-items:center;justify-content:center;gap:24px;width:100%}
+.donut{width:190px;height:190px;border-radius:50%;position:relative;flex:0 0 190px;background:#e7edf2}
+.donut:after{content:"";position:absolute;inset:43px;background:#fff;border-radius:50%;box-shadow:0 0 0 1px #eef1f4}
+.donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1;text-align:center}
+.donut-center small{font-size:8px;color:var(--muted);letter-spacing:.55px;text-transform:uppercase}.donut-center b{font-size:24px;margin-top:3px}
+.legend{display:grid;gap:8px;min-width:210px}.legend-row{display:grid;grid-template-columns:9px 1fr auto;gap:7px;align-items:center;font-size:9px}.dot{width:8px;height:8px;border-radius:50%}.legend-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.legend-value{font-weight:800}.legend-share{font-weight:400;color:var(--muted);margin-left:4px}
+.nap-table-wrap{overflow:auto;max-height:560px;border:1px solid var(--line);border-radius:8px;margin-top:10px}
+.nap-table{width:100%;min-width:1120px;border-collapse:collapse}
+.nap-table th,.nap-table td{padding:8px 9px;border-bottom:1px solid #edf0f4;text-align:left;vertical-align:top}
+.nap-table th{position:sticky;top:0;background:#f7f9fb;z-index:2;color:#687585;font-size:8px;text-transform:uppercase;letter-spacing:.45px}
+.nap-table td{font-size:9px;white-space:nowrap}.nap-table td.finding{white-space:normal;min-width:230px}.nap-table td.duration{font-weight:800}
+.note-line{font-size:8px;color:var(--muted);margin-top:8px}
+.empty{padding:24px;text-align:center;color:#7c8996;font-size:9px}
+.data-health{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.health-card{background:var(--surface-2);border:1px solid #e8edf2;border-radius:8px;padding:9px}.health-card small{display:block;color:var(--muted);font-size:8px}.health-card b{font-size:13px;margin-top:3px;display:block}
+footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;color:#7c8996;font-size:8px}
+.loading{padding:30px;text-align:center;color:var(--muted);font-size:10px}
+@media(max-width:1150px){.grid{grid-template-columns:1fr}.data-health{grid-template-columns:repeat(2,1fr)}.filters{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:720px){body{padding:9px}.top{display:block}.top-right{justify-content:flex-start;margin-top:10px}.filters{grid-template-columns:1fr}.kpis{grid-template-columns:1fr}.data-health{grid-template-columns:1fr}.donut-wrap{flex-direction:column}.legend{width:100%}}
 </style>
 </head>
 <body>
 <main>
 <header class="top">
-<div class="brand"><div class="mark"></div><div><h1>NAP NOC LIVE MONITORING</h1><p>DATABASE FINAL STATUS is the status source of truth • NAP DOWN is read from the spreadsheet • direct Google Sheets sync is authoritative</p></div></div>
-<div class="top-right">
-<div class="report-control"><span>MONTH</span><select id="month"><option value="ALL">All months</option></select></div>
-<div class="report-control"><span>DATE</span><select id="date"><option value="ALL">All dates</option></select></div>
-<div class="agent-badge attention" id="agentStatus"><i></i><span>SYNC AGENT • CHECKING</span></div>
-<div class="live"><i></i><span id="live">LIVE • CONNECTING</span></div>
-</div>
+  <div class="brand">
+    <div class="mark"></div>
+    <div>
+      <h1>NAP NOC Operations Dashboard</h1>
+      <div class="subtitle">Spreadsheet-first monitoring • DATABASE FINAL STATUS + NAP DOWN</div>
+    </div>
+  </div>
+  <div class="top-right">
+    <span id="syncBadge" class="pill info"><i></i>SYNC AGENT • CHECKING</span>
+    <span id="clock" class="time">—</span>
+    <div class="control"><label>MONTH</label><select id="month"></select></div>
+    <div class="control"><label>DATE</label><select id="date"></select></div>
+  </div>
 </header>
-<div id="alert" class="alert"></div><div id="info" class="info"></div>
-<div class="filters">
-<label class="filter"><span>PROVINCE</span><select id="province"><option value="ALL">All</option></select></label>
-<label class="filter"><span>FINAL STATUS</span><select id="status"><option value="ALL">All</option></select></label>
-<label class="filter"><span>FINDINGS / NAP STATUS</span><select id="finding"><option value="ALL">All</option></select></label>
-<label class="filter"><span>RFO</span><select id="rfo"><option value="ALL">All</option></select></label>
-<label class="filter"><span>CONCERN GROUP</span><select id="concern"><option value="ALL">All</option></select></label>
-</div>
-<div class="meta" id="meta">Connecting to DATABASE and NAP DOWN…</div>
-<div class="kpis">
-<div class="kpi red"><div class="k-label">PENDING</div><div class="k-value" id="pending">—</div><div class="k-note">DATABASE FINAL STATUS = PENDING</div></div>
-<div class="kpi green"><div class="k-label">RESTORED</div><div class="k-value" id="restored">—</div><div class="k-note">DATABASE FINAL STATUS = RESTORED</div></div>
-</div>
-<div class="grid two">
-<section class="panel"><h2>DATABASE FINAL STATUS</h2><p>Simple breakdown of every FINAL STATUS value in the active DATABASE filter.</p><div class="chart" id="finalStatusDonut"></div></section>
-<section class="panel"><h2>NAP DOWN</h2><p>Direct details from the NAP DOWN tab. No inferred fields are added.</p>
-<div class="nap-summary">
-<div class="nap-total"><div class="title">NAP DOWN</div><div class="number" id="napTotal">—</div></div>
-<div class="nap-table-wrap"><table class="nap-table"><thead><tr><th>Province</th><th>Municipality</th><th>Barangay</th><th>NAP Code</th><th>Coordinates</th><th>Date Endorsed</th><th>Duration</th><th>Findings</th></tr></thead><tbody id="napTable"></tbody></table></div>
-</div>
+
+<div id="alert" class="alert"></div>
+<div id="info" class="info"></div>
+
+<section class="filters">
+  <div class="control"><label>PROVINCE</label><select id="province"></select></div>
+  <div class="control"><label>FINAL STATUS</label><select id="status"></select></div>
+  <div class="control"><label>FINDINGS</label><select id="finding"></select></div>
+  <div class="control"><label>RFO</label><select id="rfo"></select></div>
+  <div class="control"><label>CONCERN</label><select id="concern"></select></div>
+  <div class="control"><label>SOURCE</label><select id="sourceSelect" disabled><option>DIRECT GOOGLE SHEETS</option></select></div>
 </section>
-</div>
-<section class="panel" style="margin-top:8px">
-<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
-<div><h2>NAP DOWN DETAILS</h2><p>Same source columns shown in the Google Sheet: Province • Municipality • Barangay • NAP Code • Coordinates • Date Endorsed • Duration • Findings.</p></div>
-<div class="actions"><button id="audit">Audit formulas</button><button id="repair">Repair safe gaps</button></div>
-</div>
+
+<div id="meta" class="meta">Waiting for a direct Google Sheets read…</div>
+
+<section class="kpis">
+  <article class="kpi pending"><div class="label">PENDING</div><div id="pending" class="value">—</div><div class="note">DATABASE FINAL STATUS</div></article>
+  <article class="kpi restored"><div class="label">RESTORED</div><div id="restored" class="value">—</div><div class="note">DATABASE FINAL STATUS</div></article>
+  <article class="kpi nap"><div class="label">NAP DOWN</div><div id="napTotal" class="value">—</div><div class="note">ROWS IN NAP DOWN SHEET</div></article>
 </section>
-<footer><span id="foot">Source: DATABASE FINAL STATUS + NAP DOWN tab</span><span>Auto sync: 15s • direct spreadsheet details</span></footer>
+
+<section class="grid">
+  <article class="panel">
+    <div class="panel-head">
+      <div><h2>DATABASE FINAL STATUS</h2><div class="desc">Counts are taken directly from the DATABASE FINAL STATUS column.</div></div>
+    </div>
+    <div id="statusChart" class="chart"><div class="loading">Waiting for source…</div></div>
+    <div class="data-health">
+      <div class="health-card"><small>DATABASE ROWS</small><b id="dbRows">—</b></div>
+      <div class="health-card"><small>NAP DOWN ROWS</small><b id="napRows">—</b></div>
+      <div class="health-card"><small>FORMULA ERRORS</small><b id="formulaErrors">—</b></div>
+      <div class="health-card"><small>LAST VERIFIED</small><b id="lastVerified">—</b></div>
+    </div>
+  </article>
+
+  <article class="panel">
+    <div class="panel-head">
+      <div><h2>NAP DOWN</h2><div class="desc">Direct rows from the NAP DOWN sheet; no database reconciliation or invented fields.</div></div>
+    </div>
+    <div class="nap-table-wrap">
+      <table class="nap-table">
+        <thead><tr>
+          <th>Province</th><th>Municipality</th><th>Barangay</th><th>NAP Code</th><th>Coordinates</th><th>Date Endorsed</th><th>Duration</th><th>Findings</th>
+        </tr></thead>
+        <tbody id="napTable"><tr><td colspan="8" class="empty">Waiting for source…</td></tr></tbody>
+      </table>
+    </div>
+    <div class="note-line">Displayed fields are read from the NAP DOWN sheet exactly as returned by Google Sheets.</div>
+  </article>
+</section>
+
+<footer><span id="foot">Source: Google Sheets API</span><span id="updated">Last update —</span></footer>
 </main>
+
 <script>
-const REFRESH=15000,PUBLIC_SHEET_ID='2PACX-1vSKPMOn6CXZN3xn1zyKGcDyayAHLMuntjJ137x5dWxZzoJstX3Ef_XTtAgh6zId4n1gEyQBeL91lHFi',PUBLIC_GID_DB='946404240',PUBLIC_GID_NAP='1995500191';
-const TERMINAL=new Set(['RESTORED','DUPLICATED','NO PROBLEM WHEN CHECKED','DISREGARD','DUPLICATE ENTRY','CANCELLED','CLOSED']);
-const S={snap:null,filters:{province:'ALL',status:'ALL',finding:'ALL',rfo:'ALL',concern:'ALL',month:'ALL',date:'ALL'},sync:null,loading:false,agent:null};
-const $=id=>document.getElementById(id),fmt=n=>new Intl.NumberFormat('en-US').format(Number(n)||0),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),clean=v=>String(v??'').replace(/\u00a0/g,' ').replace(/[\t\r\n]+/g,' ').replace(/\s+/g,' ').trim(),norm=v=>clean(v).toUpperCase(),compact=v=>norm(v).replace(/[^A-Z0-9]+/g,''),dt=v=>{const x=new Date(v||'');return Number.isNaN(x.getTime())?null:x},hours=(start,end=new Date())=>{const a=dt(start);return a?Math.max(0,(end-a)/36e5):null},dur=h=>{if(h==null)return'—';const d=Math.floor(h/24),r=Math.floor(h%24),m=Math.floor((h%1)*60);return d?d+'d '+r+'h':r?r+'h '+m+'m':m+'m'},dayKey=v=>{const x=dt(v);return x?x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'):''},monthKey=v=>{const x=dt(v);return x?x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0'):''};
-function periodMatch(v,p){const d=dt(v),now=new Date();if(!d||p==='ALL')return true;const today=dayKey(now);if(p==='TODAY')return dayKey(d)===today;if(p==='YESTERDAY'){const x=new Date(now);x.setDate(x.getDate()-1);return dayKey(d)===dayKey(x)}if(p==='THIS_MONTH')return monthKey(d)===monthKey(now);if(p==='LAST_MONTH'){const x=new Date(now);x.setDate(1);x.setMonth(x.getMonth()-1);return monthKey(d)===monthKey(x)}if(p==='THIS_WEEK'){const x=new Date(now),day=x.getDay(),diff=day===0?-6:1-day;x.setDate(x.getDate()+diff);x.setHours(0,0,0,0);const y=new Date(x);y.setDate(y.getDate()+7);return d>=x&&d<y}if(p.startsWith('MONTH:'))return monthKey(d)===p.slice(6);return true}
-function matchBase(r){const f=S.filters;return(f.province==='ALL'||r.province===f.province)&&(f.status==='ALL'||r.finalStatus===f.status)&&(f.finding==='ALL'||r.finding===f.finding)&&(f.rfo==='ALL'||r.rfo===f.rfo)&&(f.concern==='ALL'||r.concern===f.concern)}
-function matchRow(r){
-  const f=S.filters;
-  if(f.month!=='ALL'&&monthKey(r.dateEndorsed)!==f.month)return false;
-  if(f.date!=='ALL'&&dayKey(r.dateEndorsed)!==f.date)return false;
-  return matchBase(r);
+const $ = id => document.getElementById(id);
+const S = {snap:null,lastGood:null,filters:{month:'ALL',date:'ALL',province:'ALL',status:'ALL',finding:'ALL',rfo:'ALL',concern:'ALL'},loading:false};
+const REFRESH_MS = 30000;
+
+function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function clean(v){return String(v??'').replace(/\u00a0/g,' ').replace(/[\t\r\n]+/g,' ').replace(/\s+/g,' ').trim()}
+function norm(v){return clean(v).toUpperCase()}
+function fmt(v){return Number(v||0).toLocaleString()}
+function parseDate(v){const s=clean(v);if(!s)return null;const x=new Date(s);return Number.isNaN(x.getTime())?null:x}
+function dayKey(v){const x=parseDate(v);return x?[x.getFullYear(),String(x.getMonth()+1).padStart(2,'0'),String(x.getDate()).padStart(2,'0')].join('-'):''}
+function dateLabel(k){if(!k||k==='ALL')return'All dates';const [y,m,d]=k.split('-');return new Date(Number(y),Number(m)-1,Number(d)).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}
+function monthLabel(k){if(!k||k==='ALL')return'All months';const [y,m]=k.split('-');return new Date(Number(y),Number(m)-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'})}
+
+function setInfo(text){const e=$('info');e.textContent=text||'';e.style.display=text?'block':'none'}
+function setAlert(text){const e=$('alert');e.textContent=text||'';e.style.display=text?'block':'none'}
+function setBadge(state,text){
+  const e=$('syncBadge'); e.className='pill '+(state==='SYNCED'?'ok':state==='SOURCE_ERROR'||state==='AUTH_REQUIRED'?'bad':'info');
+  e.innerHTML='<i></i>SYNC AGENT • '+esc(text);
 }
-function setAlert(t){$('alert').style.display=t?'block':'none';$('alert').textContent=t||''}function setInfo(t){$('info').style.display=t?'block':'none';$('info').textContent=t||''}
-function uniq(a){return [...new Set((a||[]).filter(v=>clean(v)!=='').map(String))].sort()}
-function formatMonth(k){if(!k||k==='ALL')return'All months';const [y,m]=k.split('-');const d=new Date(Number(y),Number(m)-1,1);return d.toLocaleString('en-US',{month:'long',year:'numeric'})}
-function formatDate(k){if(!k||k==='ALL')return'All dates';const [y,m,d]=k.split('-');return new Date(Number(y),Number(m)-1,Number(d)).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}
-function syncDateSelectors(){
-  const dates=uniq((S.snap?.rows||[]).map(r=>dayKey(r.dateEndorsed)).filter(Boolean)).sort().reverse();
-  const months=uniq(dates.map(k=>k.slice(0,7))).sort().reverse();
-  const monthEl=$('month'),dateEl=$('date');
-  const priorMonth=S.filters.month,priorDate=S.filters.date;
-  monthEl.innerHTML='<option value="ALL">All months</option>'+months.map(k=>'<option value="'+esc(k)+'">'+esc(formatMonth(k))+'</option>').join('');
-  if(priorMonth!=='ALL'&&months.includes(priorMonth))monthEl.value=priorMonth;
-  else if(priorMonth==='ALL')monthEl.value='ALL'; else monthEl.value=months[0]||'ALL';
-  S.filters.month=monthEl.value;
-  const filteredDates=S.filters.month==='ALL'?dates:dates.filter(k=>k.startsWith(S.filters.month));
-  dateEl.innerHTML='<option value="ALL">All dates</option>'+filteredDates.map(k=>'<option value="'+esc(k)+'">'+esc(formatDate(k))+'</option>').join('');
-  if(priorDate!=='ALL'&&filteredDates.includes(priorDate))dateEl.value=priorDate;
-  else if(filteredDates.length&&priorDate!=='ALL')dateEl.value=filteredDates[0]; else dateEl.value='ALL';
-  S.filters.date=dateEl.value;
+function setSelect(id,values){
+  const el=$(id), current=S.filters[id];
+  const vals=[...new Set((values||[]).filter(Boolean))];
+  el.innerHTML='<option value="ALL">All</option>'+vals.map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join('');
+  el.value=vals.includes(current)?current:'ALL';
+  S.filters[id]=el.value;
 }
-function setSelect(id,values){const e=$(id),current=S.filters[id],vals=uniq(values),options=[['ALL','All'],...vals.map(v=>[v,v])];e.innerHTML=options.map(x=>'<option value="'+esc(x[0])+'">'+esc(x[1])+'</option>').join('');e.value=options.some(x=>x[0]===current)?current:'ALL';S.filters[id]=e.value}
-function syncFilters(){const o=S.snap?.options||{};setSelect('province',o.province||[]);setSelect('status',o.status||[]);setSelect('finding',o.finding||[]);setSelect('rfo',o.rfo||[]);setSelect('concern',o.concern||[]);syncDateSelectors()}
-function filteredDb(){return(S.snap?.rows||[]).filter(matchRow)}function filteredNap(){return(S.snap?.napDownRows||[]).filter(matchRow)}function statusCounts(rows){const o={};for(const r of rows){const s=clean(r.finalStatus)||'BLANK';o[s]=(o[s]||0)+1}return o}
-function svgLine(rows){const w=760,h=245,pad={l:34,r:12,t:14,b:30},pts=rows.map((r,i)=>[i,r.value]),max=Math.max(1,...pts.map(x=>x[1])),x=i=>pad.l+(pts.length<=1?0:(w-pad.l-pad.r)*i/(pts.length-1)),y=v=>h-pad.b-(h-pad.t-pad.b)*(v/max);let s='<svg class="svg" viewBox="0 0 '+w+' '+h+'"><line x1="'+pad.l+'" y1="'+(h-pad.b)+'" x2="'+(w-pad.r)+'" y2="'+(h-pad.b)+'" stroke="#dce4eb"/><line x1="'+pad.l+'" y1="'+pad.t+'" x2="'+pad.l+'" y2="'+(h-pad.b)+'" stroke="#dce4eb"/>';if(pts.length){const path=pts.map((q,i)=>(i?'L':'M')+x(q[0]).toFixed(1)+' '+y(q[1]).toFixed(1)).join(' ');s+='<path d="'+path+'" fill="none" stroke="#1769aa" stroke-width="2.5"/>';pts.forEach((q,i)=>{s+='<circle cx="'+x(q[0]).toFixed(1)+'" cy="'+y(q[1]).toFixed(1)+'" r="2.8" fill="#1769aa"/>';if(i%Math.max(1,Math.ceil(pts.length/8))===0)s+='<text x="'+x(q[0]).toFixed(1)+'" y="'+(h-10)+'" text-anchor="middle" font-size="8" fill="#6d7b89">'+esc(rows[i].label.slice(5))+'</text>'})}else s+='<text x="50%" y="50%" text-anchor="middle" font-size="10" fill="#8190a0">No filtered data</text>';return s+'</svg>'}
-function barList(items,total,color){const max=Math.max(1,...items.map(x=>x.value),total||0);return items.map(x=>'<div class="status-row"><div class="status-head"><span>'+esc(x.label)+'</span><b>'+fmt(x.value)+'</b></div><div class="bar"><i style="width:'+((x.value/max)*100).toFixed(1)+'%;background:'+color+'"></i></div></div>').join('')}function donut(items,total,label){
-  if(!items.length||!total)return'<div class="legend-empty">No data for the active filter</div>';
-  const palette=['#173f4b','#55777b','#6f9895','#8ab29e','#b8cdbd','#d2b36a','#c78370','#9a7fbe','#6f8fbe','#7a8d9a','#4f9a78','#c55a66'];
-  let cursor=0,parts=[];
-  for(let i=0;i<items.length;i++){const pct=items[i].value/total*100,start=cursor,end=cursor+pct;parts.push(palette[i%palette.length]+' '+start+'% '+end+'%');cursor=end}
-  const legend=items.map((x,i)=>'<div class="legend-row"><i class="legend-dot" style="background:'+palette[i%palette.length]+'"></i><span class="legend-name">'+esc(x.label)+'</span><span class="legend-value">'+fmt(x.value)+'<span class="legend-share">('+(x.value/total*100).toFixed(1)+'%)</span></span></div>').join('');
-  return'<div class="donut-wrap"><div class="donut" style="background:conic-gradient('+parts.join(',')+')"><div class="donut-center"><small>'+esc(label)+'</small><b>'+fmt(total)+'</b></div></div><div class="donut-legend">'+legend+'</div></div>';
+function syncDateSelects(){
+  const db=S.snap?.rows||[];
+  const dates=[...new Set(db.map(r=>dayKey(r.dateEndorsed)).filter(Boolean))].sort().reverse();
+  const months=[...new Set(dates.map(d=>d.slice(0,7)))];
+  const pm=S.filters.month,pd=S.filters.date;
+
+  $('month').innerHTML='<option value="ALL">All months</option>'+months.map(k=>'<option value="'+k+'">'+monthLabel(k)+'</option>').join('');
+  $('month').value=months.includes(pm)?pm:'ALL';
+  S.filters.month=$('month').value;
+
+  const allowed=S.filters.month==='ALL'?dates:dates.filter(d=>d.startsWith(S.filters.month));
+  $('date').innerHTML='<option value="ALL">All dates</option>'+allowed.map(k=>'<option value="'+k+'">'+dateLabel(k)+'</option>').join('');
+  $('date').value=allowed.includes(pd)?pd:'ALL';
+  S.filters.date=$('date').value;
+}
+function syncFilters(){
+  const o=S.snap?.options||{};
+  setSelect('province',o.province);setSelect('status',o.status);setSelect('finding',o.finding);setSelect('rfo',o.rfo);setSelect('concern',o.concern);syncDateSelects();
+}
+function match(r){
+  if(S.filters.province!=='ALL'&&r.province!==S.filters.province)return false;
+  if(S.filters.status!=='ALL'&&norm(r.finalStatus)!==norm(S.filters.status))return false;
+  if(S.filters.finding!=='ALL'&&r.finding!==S.filters.finding)return false;
+  if(S.filters.rfo!=='ALL'&&r.rfo!==S.filters.rfo)return false;
+  if(S.filters.concern!=='ALL'&&r.concern!==S.filters.concern)return false;
+  if(S.filters.date!=='ALL'&&dayKey(r.dateEndorsed)!==S.filters.date)return false;
+  if(S.filters.month!=='ALL'&&!dayKey(r.dateEndorsed).startsWith(S.filters.month))return false;
+  return true;
+}
+function chart(counts,total){
+  const entries=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  if(!total)return'<div class="empty">No rows match the current filters.</div>';
+  const palette=['#173a5e','#2d6fa7','#147a52','#6c879d','#b07b2b','#8f6fb5','#b33a4a','#557d71','#7b8792','#6e9f75'];
+  let start=0;
+  const segments=[];
+  entries.forEach(([,v],i)=>{const end=start+(v/total)*100;segments.push(palette[i%palette.length]+' '+start+'% '+end+'%');start=end});
+  const legend=entries.map(([k,v],i)=>'<div class="legend-row"><span class="dot" style="background:'+palette[i%palette.length]+'"></span><span class="legend-name">'+esc(k)+'</span><span class="legend-value">'+fmt(v)+'<span class="legend-share">('+(v/total*100).toFixed(1)+'%)</span></span></div>').join('');
+  return'<div class="donut-wrap"><div class="donut" style="background:conic-gradient('+segments.join(',')+')"><div class="donut-center"><small>Total filtered</small><b>'+fmt(total)+'</b></div></div><div class="legend">'+legend+'</div></div>';
 }
 function render(){
   syncFilters();
-  const db=filteredDb(),nap=filteredNap();
-  const sc=statusCounts(db);
+  const db=(S.snap?.rows||[]).filter(match);
+  const nap=(S.snap?.napDownRows||[]).filter(match);
+  const counts={};db.forEach(r=>{const s=clean(r.finalStatus)||'BLANK';counts[s]=(counts[s]||0)+1});
   const total=db.length;
   const pending=db.filter(r=>norm(r.finalStatus)==='PENDING').length;
   const restored=db.filter(r=>norm(r.finalStatus)==='RESTORED').length;
 
-  $('pending').textContent=fmt(pending);
-  $('restored').textContent=fmt(restored);
-  $('napTotal').textContent=fmt(nap.length);
-  $('meta').innerHTML='DATABASE FINAL STATUS: <b>'+fmt(total)+' filtered rows</b> • PENDING: <b>'+fmt(pending)+'</b> • RESTORED: <b>'+fmt(restored)+'</b> • NAP DOWN: <b>'+fmt(nap.length)+'</b> • REPORT DATE: <b>'+esc(formatDate(S.filters.date))+'</b> • '+(S.agent?.syncState==='SYNCED'?'SOURCE: DIRECT GOOGLE SHEETS':'SOURCE: '+esc(S.snap?.sourceMode||'CHECKING'))+' • Last sync: <b>'+(S.sync?S.sync.toLocaleTimeString():'—')+'</b>';
-  setInfo('');
-
-  const sItems=Object.entries(sc).sort((a,b)=>b[1]-a[1]).map(x=>({label:x[0],value:x[1]}));
-  $('finalStatusDonut').innerHTML=donut(sItems,total,'TOTAL RECORDS');
-
-  const rows=nap.slice().sort((a,b)=>{
-    const da=dt(a.dateEndorsed)?.getTime()||0,db=dt(b.dateEndorsed)?.getTime()||0;
-    return db-da;
-  });
-  $('napTable').innerHTML=rows.length?rows.slice(0,1000).map(r=>{
-    const endorsed=r.dateEndorsed?new Date(r.dateEndorsed).toLocaleString(): '—';
-    return '<tr><td>'+esc(r.province||'—')+'</td><td>'+esc(r.municipality||'—')+'</td><td>'+esc(r.barangay||'—')+'</td><td>'+esc(r.napCode||'—')+'</td><td>'+esc(r.coordinates||'—')+'</td><td>'+esc(endorsed)+'</td><td class="duration">'+esc(r.duration||dur(r.downHours)||'—')+'</td><td>'+esc(r.finding||'—')+'</td></tr>';
-  }).join(''):'<tr><td colspan="8" class="empty">No NAP DOWN rows match the selected filters.</td></tr>';
-
-  $('live').textContent='LIVE • '+(S.sync?S.sync.toLocaleTimeString():'CONNECTED');
-  $('foot').textContent='Source: DATABASE FINAL STATUS + NAP DOWN tab • Google Sheets • 15s sync';
+  $('pending').textContent=fmt(pending);$('restored').textContent=fmt(restored);$('napTotal').textContent=fmt(nap.length);
+  $('statusChart').innerHTML=chart(counts,total);
+  $('dbRows').textContent=fmt(S.snap?.diagnostics?.databaseRows);$('napRows').textContent=fmt(S.snap?.diagnostics?.napDownRows);
+  $('formulaErrors').textContent=fmt(S.snap?.diagnostics?.formulaErrors);
+  $('lastVerified').textContent=S.snap?.checkedAt?new Date(S.snap.checkedAt).toLocaleTimeString():'—';
+  $('meta').innerHTML='DATABASE FINAL STATUS: <b>'+fmt(total)+' filtered rows</b> • PENDING: <b>'+fmt(pending)+'</b> • RESTORED: <b>'+fmt(restored)+'</b> • NAP DOWN: <b>'+fmt(nap.length)+'</b> • '+(S.filters.date==='ALL'?'All dates':dateLabel(S.filters.date));
+  const rows=nap.slice().sort((a,b)=>(parseDate(b.dateEndorsed)?.getTime()||0)-(parseDate(a.dateEndorsed)?.getTime()||0));
+  $('napTable').innerHTML=rows.length?rows.map(r=>{
+    const dt=r.dateEndorsed?parseDate(r.dateEndorsed)?.toLocaleString():'—';
+    return'<tr><td>'+esc(r.province||'—')+'</td><td>'+esc(r.municipality||'—')+'</td><td>'+esc(r.barangay||'—')+'</td><td>'+esc(r.napCode||'—')+'</td><td>'+esc(r.coordinates||'—')+'</td><td>'+esc(dt||'—')+'</td><td class="duration">'+esc(r.duration||'—')+'</td><td class="finding">'+esc(r.finding||'—')+'</td></tr>'
+  }).join(''):'<tr><td colspan="8" class="empty">No NAP DOWN rows match the current filters.</td></tr>';
+  $('updated').textContent='Last update '+(S.snap?.checkedAt?new Date(S.snap.checkedAt).toLocaleString():'—');
+  $('foot').textContent='Source: Google Sheets API • Direct read • no published-feed fallback';
 }
-function withTimeout(p,ms){return Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error('Source timeout after '+Math.round(ms/1000)+'s')),ms))])}
-async function json(url,opt){const r=await fetch(url,opt),j=await r.json().catch(()=>({ok:false,error:'Invalid server response'}));if(!r.ok||j.ok===false)throw new Error(j.error||'HTTP '+r.status);return j}
-function csvRows(text){const out=[];let row=[],cell='',q=false;for(let i=0;i<text.length;i++){const ch=text[i],n=text[i+1];if(ch==='"'&&q&&n==='"'){cell+='"';i++;continue}if(ch==='"'){q=!q;continue}if(ch===','&&!q){row.push(cell);cell='';continue}if((ch==='\n'||ch==='\r')&&!q){if(ch==='\r'&&n==='\n')i++;row.push(cell);cell='';if(row.some(v=>clean(v)!==''))out.push(row);row=[];continue}cell+=ch}if(cell!==''||row.length){row.push(cell);if(row.some(v=>clean(v)!==''))out.push(row)}return out}
-function gvizJsonp(gid,timeoutMs=12000){return new Promise((resolve,reject)=>{const cb='__nocgviz_'+Date.now()+'_'+Math.random().toString(36).slice(2),sc=document.createElement('script');let done=false;const cleanup=()=>{done=true;clearTimeout(timer);try{delete window[cb]}catch(_){window[cb]=undefined}sc.remove()},timer=setTimeout(()=>{cleanup();reject(new Error('Google Sheets JSONP timeout'))},timeoutMs);window[cb]=payload=>{if(done)return;try{if(!payload||payload.status!=='ok'||!payload.table)throw new Error(payload?.errors?.[0]?.detailed_message||payload?.errors?.[0]?.message||'Google Sheets response error');const cols=payload.table.cols||[],out=[cols.map(c=>c.label||'')];for(const row of payload.table.rows||[])out.push(cols.map((_,i)=>{const cell=(row.c||[])[i];return cell?(cell.f??cell.v??''):''}));cleanup();resolve(out)}catch(e){cleanup();reject(e)}};sc.onerror=()=>{cleanup();reject(new Error('Google Sheets JSONP failed'))};sc.src='https://docs.google.com/spreadsheets/d/e/'+PUBLIC_SHEET_ID+'/gviz/tq?gid='+gid+'&tqx=out%3Ajson%3BresponseHandler%3A'+encodeURIComponent(cb)+'&_='+Date.now();document.head.appendChild(sc)})}
-async function publicRows(gid){for(const u of ['https://docs.google.com/spreadsheets/d/e/'+PUBLIC_SHEET_ID+'/gviz/tq?tqx=out:csv&gid='+gid+'&_='+Date.now(),'https://docs.google.com/spreadsheets/d/e/'+PUBLIC_SHEET_ID+'/pub?gid='+gid+'&single=true&output=csv&_='+Date.now()]){try{const r=await fetch(u,{cache:'no-store',mode:'cors'});if(!r.ok)continue;const t=await r.text();if(/<html|<!doctype/i.test(t))continue;const rows=csvRows(t);if(rows.length>1)return rows}catch(_){}}return gvizJsonp(gid)}
-function headerIdx(rows,need){let best=-1,score=-1;for(let i=0;i<Math.min(60,rows.length);i++){const h=(rows[i]||[]).map(norm),s=need.filter(x=>h.includes(x)).length;if(s>score){score=s;best=i}}return score>=3?best:-1}
-function ci(h,aliases){const H=h.map(norm);for(const a of aliases){const i=H.indexOf(norm(a));if(i>=0)return i}return -1}
-function browserDb(rows){const hi=headerIdx(rows,['TIMESTAMP','PROVINCE','MUNICIPALITY','FINAL STATUS','DATE ENDORSED']);if(hi<0)throw new Error('Browser could not find DATABASE header');const h=rows[hi],c={timestamp:ci(h,['TIMESTAMP']),concern:ci(h,['CONCERN GROUP','CONCERN']),province:ci(h,['PROVINCE']),municipality:ci(h,['MUNICIPALITY','CITY/MUNICIPALITY','CITY']),barangay:ci(h,['BARANGAY']),facility:ci(h,['FACILITY']),napStatus:ci(h,['NAP STATUS']),restored:ci(h,['DATE RESTORED','RESTORED DATE']),rawStatus:ci(h,['STATUS']),finalStatus:ci(h,['FINAL STATUS','FINAL STAT','FINAL_STATUS']),rfo:ci(h,['RFO']),osp:ci(h,['OSP TEAM','OPS TEAM']),endorsed:ci(h,['DATE ENDORSED','ENDORSED DATE']),etr:ci(h,['ETR'])},out=[];for(let i=hi+1;i<rows.length;i++){const r=rows[i]||[];if(!r.some(v=>clean(v)!==''))continue;const fs=clean(c.finalStatus>=0?r[c.finalStatus]:''),raw=clean(c.rawStatus>=0?r[c.rawStatus]:''),end=dt(c.endorsed>=0?r[c.endorsed]:'')||dt(c.timestamp>=0?r[c.timestamp]:''),rest=dt(c.restored>=0?r[c.restored]:''),down=end?(rest?((rest-end)/36e5):hours(end)):null,finalStatus=fs||'BLANK';out.push({rowNumber:i+1,concern:clean(c.concern>=0?r[c.concern]:''),province:clean(c.province>=0?r[c.province]:''),municipality:clean(c.municipality>=0?r[c.municipality]:''),barangay:clean(c.barangay>=0?r[c.barangay]:''),facility:clean(c.facility>=0?r[c.facility]:''),napStatus:clean(c.napStatus>=0?r[c.napStatus]:''),finding:clean(c.napStatus>=0?r[c.napStatus]:''),rfo:clean(c.rfo>=0?r[c.rfo]:''),ospTeam:clean(c.osp>=0?r[c.osp]:''),etr:clean(c.etr>=0?r[c.etr]:''),dateEndorsed:end?end.toISOString():'',dateRestored:rest?rest.toISOString():'',sourceStatus:raw,finalStatus,status:finalStatus,open:finalStatus!=='BLANK'&&!TERMINAL.has(norm(finalStatus)),restored:norm(finalStatus)==='RESTORED',downHours:down,upHours:rest?hours(rest):null})}return out}
-function browserNap(rows){const hi=headerIdx(rows,['PROVINCE','MUNICIPALITY','NAP CODE','FINDINGS']);if(hi<0)throw new Error('Browser could not find NAP DOWN header');const h=rows[hi],c={province:ci(h,['PROVINCE']),municipality:ci(h,['MUNICIPALITY']),barangay:ci(h,['BARANGAY']),napCode:ci(h,['NAP CODE','NAPCODE']),endorsed:ci(h,['DATE ENDORSED','ENDORSED DATE']),duration:ci(h,['DURATION','AGEING','AGING']),finding:ci(h,['FINDINGS','FINDING']),status:ci(h,['FINAL STATUS','FINAL STAT','STATUS'])},out=[];for(let i=hi+1;i<rows.length;i++){const r=rows[i]||[];if(!r.some(v=>clean(v)!==''))continue;out.push({sourceRow:i+1,province:clean(c.province>=0?r[c.province]:''),municipality:clean(c.municipality>=0?r[c.municipality]:''),barangay:clean(c.barangay>=0?r[c.barangay]:''),napCode:clean(c.napCode>=0?r[c.napCode]:''),dateEndorsed:dt(c.endorsed>=0?r[c.endorsed]:'')?.toISOString()||'',duration:clean(c.duration>=0?r[c.duration]:''),finding:clean(c.finding>=0?r[c.finding]:''),sourceStatus:clean(c.status>=0?r[c.status]:'')})}return out}
-function reconcileBrowser(db,n){const out=[];let matched=0;for(const x of n){let best=null;for(const r of db){if(x.province&&r.province&&norm(x.province)!==norm(r.province))continue;if(x.municipality&&r.municipality&&norm(x.municipality)!==norm(r.municipality))continue;let score=20,method=[];const nc=compact(x.napCode),rf=compact(r.facility);if(nc&&rf&&(nc===rf||rf.includes(nc)||nc.includes(rf))){score+=120;method.push('code')}if(x.finding&&r.napStatus&&norm(x.finding)===norm(r.napStatus)){score+=70;method.push('finding')}if(x.barangay&&r.barangay&&norm(x.barangay)===norm(r.barangay)){score+=40;method.push('barangay')}const xd=dt(x.dateEndorsed),rd=dt(r.dateEndorsed);if(xd&&rd){const diff=Math.abs(xd-rd)/60000;if(diff<=15){score+=80;method.push('date±15m')}else if(diff<=60){score+=65;method.push('date±1h')}else if(dayKey(xd)===dayKey(rd)){score+=45;method.push('same-day')}}if(norm(r.finalStatus)==='PENDING')score+=3;if(!best||score>best.score)best={row:r,score,method:method.join('+')||'area'}}const ok=!!best&&best.score>=70;if(ok)matched++;const r=ok?best.row:null,fs=r?r.finalStatus:(x.sourceStatus||'PENDING');let down=r?.downHours||null;if(down==null&&x.duration){const m=clean(x.duration).match(/(\d+)\s*days?/i),h=clean(x.duration).match(/(\d+)\s*hours?/i);down=(m?Number(m[1])*24:0)+(h?Number(h[1]):0)}out.push({...x,finalStatus:fs,status:fs,statusSource:r?'DATABASE FINAL STATUS':'NAP DOWN SOURCE',matchScore:ok?best.score:0,matchMethod:ok?best.method:'unmatched',matchedDbRow:r?.rowNumber||null,concern:r?.concern||'Unspecified',rfo:r?.rfo||'',ospTeam:r?.ospTeam||'',etr:r?.etr||'',dateEndorsed:r?.dateEndorsed||x.dateEndorsed,dateRestored:r?.dateRestored||'',downHours:down,upHours:r?.upHours??(r?.dateRestored?hours(r.dateRestored):null),finding:x.finding||r?.finding||r?.napStatus||'Blank',open:fs!=='BLANK'&&!TERMINAL.has(norm(fs)),restored:norm(fs)==='RESTORED'})}return{out,matched}}
-function browserBuild(dbRaw,napRaw){const db=browserDb(dbRaw),n=browserNap(napRaw),rec=reconcileBrowser(db,n),sc=statusCounts(db),nc=statusCounts(rec.out),opts={province:uniq(db.map(r=>r.province)),status:uniq(Object.keys(sc)),finding:uniq(db.map(r=>r.finding).concat(rec.out.map(r=>r.finding))),rfo:uniq(db.map(r=>r.rfo)),concern:uniq(db.map(r=>r.concern))};return{ok:true,version:'browser-'+Date.now(),sourceMode:'browser-published',rows:db,napDownRows:rec.out,statusCounts:sc,napStatusCounts:nc,pendingCount:sc.PENDING||0,napDownSheetCount:n.length,napDownPendingCount:nc.PENDING||0,reconciliation:{dbPending:sc.PENDING||0,napPending:nc.PENDING||0,dbRows:db.length,napRows:n.length,matchedNapRows:rec.matched,unmatchedNapRows:n.length-rec.matched},options:opts,pendingReconciliation:(sc.PENDING||0)===(nc.PENDING||0)&&rec.matched===n.length}}
-function setAgentBadge(state,text){
-  const e=$('agentStatus');if(!e)return;
-  e.className='agent-badge '+(state==='SYNCED'?'ok':state==='SOURCE_ERROR'||state==='AUTH_REQUIRED'?'bad':'attention');
-  e.innerHTML='<i></i><span>SYNC AGENT • '+esc(text)+'</span>';
+function showSnapshotError(j,requestError){
+  setBadge('SOURCE_ERROR','SOURCE ERROR');
+  const d=j?.diagnostics||{};
+  const parts=['DIRECT GOOGLE SHEETS READ FAILED',d.code||'SOURCE_ERROR',d.message||requestError||'Unknown source error'];
+  if(d.status)parts.push('HTTP '+d.status);
+  setAlert(parts.join(' • '));
+  const next=j?.nextAction||'Review the source error and retry.';
+  setInfo(next);
+  if(S.lastGood){S.snap=S.lastGood;render();$('meta').innerHTML='LAST VERIFIED SNAPSHOT • '+(S.lastGood.checkedAt?new Date(S.lastGood.checkedAt).toLocaleString():'—')+' • live source currently unavailable';}
+  $('updated').textContent='Source check failed '+new Date().toLocaleString();
 }
-async function runSyncAgent(){
-  try{
-    const j=await withTimeout(json('/api/agent?mode=sync&ts='+Date.now(),{cache:'no-store'}),10000);
-    S.agent=j.report||{syncState:j.configured? (j.healthy?'SYNCED':'SOURCE_ERROR'):'AUTH_REQUIRED'};
-    if(!j.configured){
-      const cd=j.diagnostics||{};
-      const label=cd.source==='INVALID_CREDENTIAL'?'INVALID CREDENTIAL':cd.source==='MISSING_CREDENTIAL'?'CREDENTIAL MISSING':'AUTH REQUIRED';
-      setAgentBadge('AUTH_REQUIRED',label);
-      setInfo(label==='CREDENTIAL MISSING'
-        ?'Production is missing GOOGLE_SERVICE_ACCOUNT_JSON_BASE64 / GOOGLE_SERVICE_ACCOUNT_JSON. Add it to the Vercel project that serves this dashboard, under Production, then redeploy.'
-        :'Production has a credential environment variable, but the value is not valid service-account JSON/Base64 JSON. Replace it with Base64 of the complete JSON file, then redeploy.');
-      return j
-    }
-    if(!j.healthy){
-      const d=j.diagnostics||{}, code=d.errorCode||j.report?.errorCode||'GOOGLE_API_ERROR';
-      const msg=d.apiError||j.report?.message||'Unknown Google Sheets API error';
-      const advice=code==='SHEET_ACCESS_DENIED'
-        ? 'Share the spreadsheet with the service-account email and retry.'
-        : code==='SHEETS_API_DISABLED'
-        ? 'Enable Google Sheets API in the service-account Google Cloud project and retry.'
-        : code==='SHEET_NOT_FOUND'
-        ? 'Verify the spreadsheet ID and sheet GIDs, then retry.'
-        : code==='GOOGLE_AUTH_FAILED'
-        ? 'Replace the Production service-account credential with the complete JSON/Base64 JSON and redeploy.'
-        : 'Check the exact Google API error below, then retry.';
-      setAgentBadge('SOURCE_ERROR','SOURCE ERROR');
-      setInfo('DIRECT SYNC FAILED • '+code+' • '+msg+' • '+advice);
-      return j
-    }
-    const r=j.report||{};
-    const currentDb=S.snap?.rows?.length;
-    const currentNap=S.snap?.napDownRows?.length;
-    const mismatch=(Number.isFinite(currentDb)&&currentDb!==r.database.rows)||(Number.isFinite(currentNap)&&currentNap!==r.napDown.rows);
-    setAgentBadge('SYNCED','SYNCED');
-    if(mismatch&&!S.loading){await loadData(true)}
-    return j;
-  }catch(e){
-    S.agent={syncState:'SOURCE_ERROR',message:e.message};
-    setAgentBadge('SOURCE_ERROR','SOURCE ERROR');
-    return null;
-  }
-}
-async function loadData(force=false){
-  if(S.loading&&!force)return;
+async function fetchSnapshot(){
+  if(S.loading)return;
   S.loading=true;
   try{
-    let apiError='';
-    try{
-      const url='/api/snapshot?ts='+Date.now()+(force?'&refresh=1':'');
-      const j=await withTimeout(json(url,{cache:'no-store'}),14000);
-      S.snap=j;S.sync=new Date();
-      if(j.sourceMode==='google-sheets-api'){
-        S.agent={...(S.agent||{}),syncState:'SYNCED'};
-        setAgentBadge('SYNCED','SYNCED');
-      }else{
-        S.agent={...(S.agent||{}),syncState:'AUTH_REQUIRED'};
-        setAgentBadge('AUTH_REQUIRED','SOURCE NOT DIRECT');
-        setInfo('DIRECT SYNC NOT READY: add the Google service-account credential to Vercel Production as GOOGLE_SERVICE_ACCOUNT_JSON_BASE64 (or GOOGLE_SERVICE_ACCOUNT_JSON), ensure the sheet is shared with the service-account email, then redeploy. Until then this is a read-only published copy and may lag the spreadsheet.');
-      }
-      setAlert('');render();return;
-    }catch(e){apiError=e.message}
-    try{
-      const [db,nap]=await Promise.all([publicRows(PUBLIC_GID_DB),publicRows(PUBLIC_GID_NAP).catch(()=>[])]);
-      S.snap=browserBuild(db,nap);S.sync=new Date();
-      S.agent={syncState:'AUTH_REQUIRED'};
-      setAgentBadge('AUTH_REQUIRED','SOURCE NOT DIRECT');
-      setAlert('');
-      render();
-      setInfo('DIRECT SYNC NOT READY: published Google feed recovery is active. It is read-only and may lag the live spreadsheet. Add the service-account credential to Vercel Production and redeploy for exact counts.');
-    }catch(e){
-      setAgentBadge('SOURCE_ERROR','SOURCE ERROR');
-      setAlert('Live source failed: '+apiError+' • Browser recovery: '+e.message);
-    }
+    const r=await fetch('/api/snapshot?ts='+Date.now(),{cache:'no-store'});
+    const j=await r.json().catch(()=>({ok:false,diagnostics:{code:'INVALID_RESPONSE',message:'Invalid JSON response from dashboard API.'}}));
+    if(!r.ok||j.ok===false){showSnapshotError(j,'HTTP '+r.status);return}
+    S.snap=j;S.lastGood=j;setAlert('');setInfo('');
+    setBadge('SYNCED','SYNCED');
+    render();
+  }catch(e){
+    showSnapshotError(null,e.message);
   }finally{S.loading=false}
 }
-async function agent(action){const token=prompt('NOC_AGENT_TOKEN');if(!token)return;try{const j=await json('/api/agent',{method:'POST',headers:{'Content-Type':'application/json','x-noc-agent-token':token},body:JSON.stringify({action})});alert(action==='audit'?'Formula audit completed: '+(j.issues?.length||0)+' issues.':'Repair completed: '+(j.repairedRuns||0)+' runs.');await loadData()}catch(e){alert(e.message)}}
-['province','status','finding','rfo','concern'].forEach(id=>$(id).addEventListener('change',()=>{S.filters[id]=$(id).value;render()}));
-$('month').addEventListener('change',async()=>{S.filters.month=$('month').value;S.filters.date='ALL';syncDateSelectors();render();runSyncAgent();});
-$('date').addEventListener('change',async()=>{S.filters.date=$('date').value;render();runSyncAgent();});
-$('audit').onclick=()=>agent('audit');$('repair').onclick=()=>agent('repair');
-loadData();runSyncAgent();setInterval(()=>{if(!document.hidden){loadData();runSyncAgent()}},REFRESH);setInterval(()=>{if(!document.hidden)runSyncAgent()},30000);document.addEventListener('visibilitychange',()=>{if(!document.hidden){loadData(true);runSyncAgent()}});
+function bind(){
+  ['province','status','finding','rfo','concern'].forEach(id=>$(id).addEventListener('change',()=>{S.filters[id]=$(id).value;render()}));
+  $('month').addEventListener('change',()=>{S.filters.month=$('month').value;S.filters.date='ALL';render()});
+  $('date').addEventListener('change',()=>{S.filters.date=$('date').value;render()});
+}
+function tick(){ $('clock').textContent=new Date().toLocaleString() }
+bind();tick();setInterval(tick,1000);
+fetchSnapshot();setInterval(fetchSnapshot,REFRESH_MS);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)fetchSnapshot()});
 </script>
 </body>
 </html>
