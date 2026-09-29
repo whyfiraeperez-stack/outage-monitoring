@@ -12,12 +12,22 @@
 .alert,.info{display:none;padding:9px 11px;border-radius:7px;font-size:10px;margin-bottom:8px}.alert{border:1px solid #efc7ce;background:#fff1f3;color:#8b2637}.info{border:1px solid #d6e3ef;background:#f1f7fc;color:#245273}
 .filters{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;background:#fff;border:1px solid var(--line);border-radius:9px;padding:9px}.filter span{display:block;color:#6d7887;font-size:8px;font-weight:800;letter-spacing:.55px;margin-bottom:4px}.filter select{width:100%;height:32px;border:1px solid #cbd5df;border-radius:6px;background:#fff;padding:0 8px;font-size:10px;color:#172533}
 .meta{padding:7px 1px;font-size:9px;color:var(--muted)}.meta b{color:#273745}
-.kpis{display:grid;grid-template-columns:repeat(2,minmax(230px,320px));gap:8px}.kpi{background:#fff;border:1px solid var(--line);border-radius:9px;padding:10px 11px;min-height:92px}.kpi.red{border-top:3px solid var(--red)}.kpi.amber{border-top:3px solid var(--amber)}.kpi.green{border-top:3px solid var(--green)}.kpi.blue{border-top:3px solid var(--blue)}.kpi.purple{border-top:3px solid var(--purple)}
+.kpis{display:grid;grid-template-columns:repeat(2,minmax(220px,300px));gap:8px}.kpi{background:#fff;border:1px solid var(--line);border-radius:9px;padding:10px 11px;min-height:92px}.kpi.red{border-top:3px solid var(--red)}.kpi.amber{border-top:3px solid var(--amber)}.kpi.green{border-top:3px solid var(--green)}.kpi.blue{border-top:3px solid var(--blue)}.kpi.purple{border-top:3px solid var(--purple)}
 .k-label{font-size:8px;color:#74808e;font-weight:800;letter-spacing:.65px}.k-value{font-size:27px;font-weight:850;line-height:1.1;margin-top:7px}.k-note{font-size:8.5px;color:var(--muted);margin-top:5px}
 .grid{display:grid;gap:8px;margin-top:8px}.two{grid-template-columns:1.35fr 1fr}.three{grid-template-columns:1fr 1fr 1fr}
 .panel{background:#fff;border:1px solid var(--line);border-radius:9px;padding:10px;min-width:0}.panel h2{font-size:12px;margin:0}.panel p{margin:3px 0 7px;font-size:8.5px;color:var(--muted)}
 .chart{min-height:245px}.svg{width:100%;height:245px;display:block}
 .donut-wrap{display:flex;align-items:center;justify-content:center;gap:22px;min-height:245px;padding:8px 6px}
+.nap-summary{display:grid;grid-template-columns:170px 1fr;gap:14px;align-items:stretch}
+.nap-total{border:1px solid var(--line);background:#fff;display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:150px}
+.nap-total .title{font-size:12px;font-weight:800;letter-spacing:.4px;color:#187b52;margin-bottom:8px}
+.nap-total .number{font-size:68px;font-weight:800;line-height:1;color:#1f2731}
+.nap-table-wrap{overflow:auto;border:1px solid var(--line);border-radius:7px;max-height:520px}
+.nap-table{width:100%;min-width:1180px;border-collapse:collapse}
+.nap-table th,.nap-table td{padding:7px 8px;border-bottom:1px solid #edf0f4;white-space:nowrap;text-align:left}
+.nap-table th{position:sticky;top:0;background:#f7f9fb;z-index:2;color:#6d7887;font-size:8px;text-transform:uppercase}
+.nap-table td{font-size:9px}
+.nap-table td.duration{font-weight:700}
 .donut{width:185px;height:185px;border-radius:50%;position:relative;flex:0 0 185px;box-shadow:inset 0 0 0 1px #edf0f4}
 .donut::after{content:"";position:absolute;inset:42px;background:#fff;border-radius:50%;box-shadow:0 0 0 1px #eef1f4}
 .donut-center{position:absolute;z-index:1;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
@@ -59,23 +69,21 @@
 <div class="kpi green"><div class="k-label">RESTORED</div><div class="k-value" id="restored">—</div><div class="k-note">DATABASE FINAL STATUS = RESTORED</div></div>
 </div>
 <div class="grid two">
-<section class="panel"><h2>Incident trend</h2><p>DATABASE records by DATE ENDORSED. Filters apply before plotting.</p><div class="chart" id="trend"></div></section>
-<section class="panel"><h2>DATABASE FINAL STATUS</h2><p>Simple breakdown of every FINAL STATUS value in the active filter.</p><div class="chart" id="finalStatusDonut"></div></section>
+<section class="panel"><h2>DATABASE FINAL STATUS</h2><p>Simple breakdown of every FINAL STATUS value in the active DATABASE filter.</p><div class="chart" id="finalStatusDonut"></div></section>
+<section class="panel"><h2>NAP DOWN</h2><p>Direct details from the NAP DOWN tab. No inferred fields are added.</p>
+<div class="nap-summary">
+<div class="nap-total"><div class="title">NAP DOWN</div><div class="number" id="napTotal">—</div></div>
+<div class="nap-table-wrap"><table class="nap-table"><thead><tr><th>Province</th><th>Municipality</th><th>Barangay</th><th>NAP Code</th><th>Coordinates</th><th>Date Endorsed</th><th>Duration</th><th>Findings</th></tr></thead><tbody id="napTable"></tbody></table></div>
 </div>
-<div class="grid three">
-<section class="panel"><h2>NAP DOWN STATUS</h2><p>How the NAP DOWN rows resolve against DATABASE FINAL STATUS.</p><div class="chart" id="napStatusDonut"></div></section>
-<section class="panel"><h2>NAP DOWN age profile by province</h2><p>Current downtime buckets using DATE ENDORSED / DATE RESTORED or NAP DOWN duration.</p><div class="stack-list" id="ageProfile"></div></section>
-<section class="panel"><h2>Average vs median downtime</h2><p>Filtered NAP DOWN rows. Values are shown as average days / median days.</p><div class="metric-bars" id="downStats"></div></section>
-</div>
-<div class="grid two">
-<section class="panel"><h2>Top findings</h2><p>Filtered NAP DOWN findings, with exact count and share.</p><div class="finding-list" id="findings"></div></section>
-<section class="panel"><h2>NAP DOWN reconciliation</h2><p>Compact source-quality view. Unmatched rows stay visible and are never given a guessed DATABASE status.</p><div class="chart" id="reconSummary"></div></section>
+</section>
 </div>
 <section class="panel" style="margin-top:8px">
-<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px"><div><h2>NAP DOWN action queue</h2><p>All NAP DOWN source rows are shown. Status comes from DATABASE FINAL STATUS when reconciled; unmatched rows are explicitly flagged.</p></div><div class="actions"><button id="audit">Audit formulas</button><button id="repair">Repair safe gaps</button></div></div>
-<div class="queue-wrap"><table class="queue"><thead><tr><th>DB FINAL STATUS</th><th>Match</th><th>Down Time</th><th>Province</th><th>Municipality</th><th>Barangay</th><th>NAP Code</th><th>Findings</th><th>RFO</th><th>Up Time</th><th>OSP</th><th>Endorsed</th><th>Restored</th><th>ETR</th></tr></thead><tbody id="queue"></tbody></table></div>
+<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+<div><h2>NAP DOWN DETAILS</h2><p>Same source columns shown in the Google Sheet: Province • Municipality • Barangay • NAP Code • Coordinates • Date Endorsed • Duration • Findings.</p></div>
+<div class="actions"><button id="audit">Audit formulas</button><button id="repair">Repair safe gaps</button></div>
+</div>
 </section>
-<footer><span id="foot">Source: DATABASE + NAP DOWN</span><span>Auto sync: 15s • charts are local SVG/HTML</span></footer>
+<footer><span id="foot">Source: DATABASE FINAL STATUS + NAP DOWN tab</span><span>Auto sync: 15s • direct spreadsheet details</span></footer>
 </main>
 <script>
 const REFRESH=15000,PUBLIC_SHEET_ID='2PACX-1vSKPMOn6CXZN3xn1zyKGcDyayAHLMuntjJ137x5dWxZzoJstX3Ef_XTtAgh6zId4n1gEyQBeL91lHFi',PUBLIC_GID_DB='946404240',PUBLIC_GID_NAP='1995500191';
@@ -101,21 +109,32 @@ function barList(items,total,color){const max=Math.max(1,...items.map(x=>x.value
 }
 function render(){
   syncFilters();
-  const db=filteredDb(),nap=filteredNap(),sc=statusCounts(db),np=statusCounts(nap),total=db.length,pending=db.filter(r=>norm(r.finalStatus)==='PENDING').length,restored=db.filter(r=>norm(r.finalStatus)==='RESTORED').length,open=db.filter(r=>r.open).length,over48=db.filter(r=>r.open&&(hours(r.dateEndorsed)||0)>48).length;
-  $('pending').textContent=fmt(pending);$('restored').textContent=fmt(restored);
-  const rr=S.snap?.reconciliation||{};
-  $('meta').innerHTML='DATABASE FINAL STATUS: <b>'+fmt(total)+' filtered rows</b> • PENDING: <b>'+fmt(pending)+'</b> • RESTORED: <b>'+fmt(restored)+'</b> • NAP DOWN: <b>'+fmt(nap.length)+'</b> • matched <b>'+fmt(rr.matchedNapRows||0)+'</b> / unmatched <b>'+fmt(rr.unmatchedNapRows||0)+'</b> • Last sync: <b>'+(S.sync?S.sync.toLocaleTimeString():'—')+'</b>';
-  if((rr.unmatchedNapRows||0)>0)setInfo('Some NAP DOWN rows remain unmatched to DATABASE. They stay visible without a guessed status.');else setInfo('');
-  const trend={};for(const r of db){const k=dayKey(r.dateEndorsed);if(k)trend[k]=(trend[k]||0)+1}$('trend').innerHTML=svgLine(Object.keys(trend).sort().slice(-31).map(k=>({label:k,value:trend[k]})));
-  const sItems=Object.entries(sc).sort((a,b)=>b[1]-a[1]).map(x=>({label:x[0],value:x[1]}));$('finalStatusDonut').innerHTML=donut(sItems,total,'TOTAL RECORDS');
-  const nItems=Object.entries(np).sort((a,b)=>b[1]-a[1]).map(x=>({label:x[0],value:x[1]}));$('napStatusDonut').innerHTML=donut(nItems,nap.length,'NAP DOWN');
-  const byProv={};for(const r of nap){const p=r.province||'Unknown',h=r.downHours??hours(r.dateEndorsed),bucket=h==null?'u':h<=24?'a':h<=48?'b':h<=168?'c':'d';if(!byProv[p])byProv[p]={a:0,b:0,c:0,d:0,u:0,total:0};byProv[p][bucket]++;byProv[p].total++}const ageItems=Object.entries(byProv).sort((a,b)=>b[1].total-a[1].total).slice(0,12);$('ageProfile').innerHTML=ageItems.map(([p,v])=>'<div class="stack-item"><div class="stack-name">'+esc(p)+'</div><div class="stack"><i class="seg a" style="width:'+(v.a/v.total*100)+'%"></i><i class="seg b" style="width:'+(v.b/v.total*100)+'%"></i><i class="seg c" style="width:'+(v.c/v.total*100)+'%"></i><i class="seg d" style="width:'+(v.d/v.total*100)+'%"></i><i class="seg u" style="width:'+(v.u/v.total*100)+'%"></i></div><div>'+fmt(v.total)+'</div></div>').join('')||'<div class="empty">No filtered NAP DOWN rows</div>';
-  const byDown={};for(const r of nap){const h=r.downHours??hours(r.dateEndorsed);if(h==null)continue;const p=r.province||'Unknown';(byDown[p]||(byDown[p]=[])).push(h)}const ds=Object.entries(byDown).map(([p,a])=>{a.sort((x,y)=>x-y);const avg=a.reduce((s,x)=>s+x,0)/a.length,med=a.length%2?a[(a.length-1)/2]:(a[a.length/2-1]+a[a.length/2])/2;return{p,avg,med,n:a.length}}).sort((a,b)=>b.avg-a.avg).slice(0,10),mx=Math.max(1,...ds.map(x=>x.avg));$('downStats').innerHTML=ds.map(x=>'<div class="metric-row"><div>'+esc(x.p)+'</div><div class="metric-track"><i class="avg" style="width:'+(x.avg/mx*100).toFixed(1)+'%"></i><i class="med" style="width:'+(x.med/mx*100).toFixed(1)+'%"></i></div><div>'+(x.avg/24).toFixed(1)+'d / '+(x.med/24).toFixed(1)+'d</div></div>').join('')||'<div class="empty">No downtime data</div>';
-  const fm={};for(const r of nap){const k=r.finding||'Blank';fm[k]=(fm[k]||0)+1}const fitems=Object.entries(fm).sort((a,b)=>b[1]-a[1]).slice(0,10),fmax=Math.max(1,...fitems.map(x=>x[1]));$('findings').innerHTML=fitems.map(x=>'<div class="finding-row"><div class="name">'+esc(x[0])+'</div><div class="bar"><i style="width:'+(x[1]/fmax*100).toFixed(1)+'%"></i></div><div>'+fmt(x[1])+'</div></div>').join('')||'<div class="empty">No filtered findings</div>';
-  const matched=rr.matchedNapRows||0,unmatched=rr.unmatchedNapRows||0;
-  $('reconSummary').innerHTML=donut([{label:'Matched to DATABASE',value:matched},{label:'Unmatched',value:unmatched}],matched+unmatched,'NAP ROWS');
-  const q=nap.slice().sort((a,b)=>(b.downHours||hours(b.dateEndorsed)||0)-(a.downHours||hours(a.dateEndorsed)||0));$('queue').innerHTML=q.length?q.slice(0,600).map(r=>{const ns=norm(r.finalStatus),badge=ns==='PENDING'?'pending':ns==='RESTORED'?'restored':r.statusSource==='DATABASE FINAL STATUS'?'other':'unmatched',match=r.statusSource==='DATABASE FINAL STATUS'?'DB '+(r.matchMethod||'match'):'UNMATCHED';return '<tr><td><span class="badge '+badge+'">'+esc(r.finalStatus||'—')+'</span></td><td><span class="badge '+badge+'">'+esc(match)+'</span></td><td>'+esc(dur(r.downHours??hours(r.dateEndorsed)))+'</td><td>'+esc(r.province||'—')+'</td><td>'+esc(r.municipality||'—')+'</td><td>'+esc(r.barangay||'—')+'</td><td>'+esc(r.napCode||'—')+'</td><td>'+esc(r.finding||'—')+'</td><td>'+esc(r.rfo||'—')+'</td><td>'+esc(r.dateRestored?dur(r.upHours??hours(r.dateRestored)):'DOWN')+'</td><td>'+esc(r.ospTeam||'—')+'</td><td>'+esc(r.dateEndorsed?new Date(r.dateEndorsed).toLocaleString():'—')+'</td><td>'+esc(r.dateRestored?new Date(r.dateRestored).toLocaleString():'—')+'</td><td>'+esc(r.etr||'—')+'</td></tr>'}).join(''):'<tr><td colspan="14" class="empty">No NAP DOWN rows match the selected filters.</td></tr>';
-  $('live').textContent='LIVE • '+(S.sync?S.sync.toLocaleTimeString():'CONNECTED');$('foot').textContent='Source: DATABASE FINAL STATUS + NAP DOWN reconciliation • Google Sheets';
+  const db=filteredDb(),nap=filteredNap();
+  const sc=statusCounts(db);
+  const total=db.length;
+  const pending=db.filter(r=>norm(r.finalStatus)==='PENDING').length;
+  const restored=db.filter(r=>norm(r.finalStatus)==='RESTORED').length;
+
+  $('pending').textContent=fmt(pending);
+  $('restored').textContent=fmt(restored);
+  $('napTotal').textContent=fmt(nap.length);
+  $('meta').innerHTML='DATABASE FINAL STATUS: <b>'+fmt(total)+' filtered rows</b> • PENDING: <b>'+fmt(pending)+'</b> • RESTORED: <b>'+fmt(restored)+'</b> • NAP DOWN: <b>'+fmt(nap.length)+'</b> • Last sync: <b>'+(S.sync?S.sync.toLocaleTimeString():'—')+'</b>';
+  setInfo('');
+
+  const sItems=Object.entries(sc).sort((a,b)=>b[1]-a[1]).map(x=>({label:x[0],value:x[1]}));
+  $('finalStatusDonut').innerHTML=donut(sItems,total,'TOTAL RECORDS');
+
+  const rows=nap.slice().sort((a,b)=>{
+    const da=dt(a.dateEndorsed)?.getTime()||0,db=dt(b.dateEndorsed)?.getTime()||0;
+    return db-da;
+  });
+  $('napTable').innerHTML=rows.length?rows.slice(0,1000).map(r=>{
+    const endorsed=r.dateEndorsed?new Date(r.dateEndorsed).toLocaleString(): '—';
+    return '<tr><td>'+esc(r.province||'—')+'</td><td>'+esc(r.municipality||'—')+'</td><td>'+esc(r.barangay||'—')+'</td><td>'+esc(r.napCode||'—')+'</td><td>'+esc(r.coordinates||'—')+'</td><td>'+esc(endorsed)+'</td><td class="duration">'+esc(r.duration||dur(r.downHours)||'—')+'</td><td>'+esc(r.finding||'—')+'</td></tr>';
+  }).join(''):'<tr><td colspan="8" class="empty">No NAP DOWN rows match the selected filters.</td></tr>';
+
+  $('live').textContent='LIVE • '+(S.sync?S.sync.toLocaleTimeString():'CONNECTED');
+  $('foot').textContent='Source: DATABASE FINAL STATUS + NAP DOWN tab • Google Sheets • 15s sync';
 }
 function withTimeout(p,ms){return Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error('Source timeout after '+Math.round(ms/1000)+'s')),ms))])}
 async function json(url,opt){const r=await fetch(url,opt),j=await r.json().catch(()=>({ok:false,error:'Invalid server response'}));if(!r.ok||j.ok===false)throw new Error(j.error||'HTTP '+r.status);return j}
