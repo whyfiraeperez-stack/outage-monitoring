@@ -187,8 +187,16 @@ async function runSyncAgent(){
   try{
     const j=await withTimeout(json('/api/agent?mode=sync&ts='+Date.now(),{cache:'no-store'}),10000);
     S.agent=j.report||{syncState:j.configured? (j.healthy?'SYNCED':'SOURCE_ERROR'):'AUTH_REQUIRED'};
-    if(!j.configured){setAgentBadge('AUTH_REQUIRED','AUTH REQUIRED');return j}
-    if(!j.healthy){setAgentBadge('SOURCE_ERROR','SOURCE ERROR');return j}
+    if(!j.configured){
+      const cd=j.diagnostics||{};
+      const label=cd.source==='INVALID_CREDENTIAL'?'INVALID CREDENTIAL':cd.source==='MISSING_CREDENTIAL'?'CREDENTIAL MISSING':'AUTH REQUIRED';
+      setAgentBadge('AUTH_REQUIRED',label);
+      setInfo(label==='CREDENTIAL MISSING'
+        ?'Production is missing GOOGLE_SERVICE_ACCOUNT_JSON_BASE64 / GOOGLE_SERVICE_ACCOUNT_JSON. Add it to the Vercel project that serves this dashboard, under Production, then redeploy.'
+        :'Production has a credential environment variable, but the value is not valid service-account JSON/Base64 JSON. Replace it with Base64 of the complete JSON file, then redeploy.');
+      return j
+    }
+    if(!j.healthy){setAgentBadge('SOURCE_ERROR','SOURCE ERROR');setInfo('Credential is recognized, but Google Sheets API access failed. Confirm the service account has access to the spreadsheet, then redeploy/retry.');return j}
     const r=j.report||{};
     const currentDb=S.snap?.rows?.length;
     const currentNap=S.snap?.napDownRows?.length;
