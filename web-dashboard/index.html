@@ -75,35 +75,33 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;co
 @media(max-width:1150px){.grid{grid-template-columns:1fr}.data-health{grid-template-columns:repeat(2,1fr)}.filters{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:720px){body{padding:9px}.top{display:block}.top-right{justify-content:flex-start;margin-top:10px}.filters{grid-template-columns:1fr}.kpis{grid-template-columns:1fr}.data-health{grid-template-columns:1fr}.nap-filters{grid-template-columns:1fr 1fr}.nap-clear{width:100%}.nap-countbar{display:block}.nap-countbar .sort-note{margin-top:4px;text-align:left}.nap-table th,.nap-table td{padding:7px 5px;font-size:7.5px}.donut-wrap{flex-direction:column}.legend{width:100%}}
 
-.summary-section{margin-top:18px}
-.summary-grid{display:grid;grid-template-columns:1fr 1fr 1.25fr;gap:12px}
-.summary-card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:0;overflow:hidden;box-shadow:var(--shadow)}
-.summary-card h3{margin:0;padding:7px 9px;text-align:center;color:var(--brand-deep);font-size:10px;font-weight:900;border-bottom:1px solid var(--line);background:var(--brand-soft);letter-spacing:.2px}
-.summary-card table{width:100%;border-collapse:collapse;table-layout:fixed}
-.summary-card th,.summary-card td{padding:5px 7px;border-bottom:1px solid #edf0f4;font-size:8.5px;text-align:left;vertical-align:middle;overflow-wrap:anywhere}
-.summary-card th{font-size:7.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);background:#fafcfc}
-.summary-card tr:last-child td{border-bottom:0}
-.summary-card td.num,.summary-card th.num{text-align:right}
-.summary-card .empty{padding:14px}
-.summary-card .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:middle}
-.summary-card .dot.green{background:#39b96b}.summary-card .dot.amber{background:#e8b63e}.summary-card .dot.red{background:#e55b65}
-@media(max-width:1150px){.summary-grid{grid-template-columns:1fr 1fr}.summary-grid .wide{grid-column:1/-1}}
-@media(max-width:720px){.summary-grid{grid-template-columns:1fr}.summary-grid .wide{grid-column:auto}}
+.details-tab{position:fixed;left:0;top:46%;z-index:50;transform:translateY(-50%);border:1px solid var(--brand-line);border-left:0;border-radius:0 8px 8px 0;background:var(--brand);color:#fff;padding:13px 8px;writing-mode:vertical-rl;text-orientation:mixed;font-size:10px;font-weight:900;letter-spacing:.8px;cursor:pointer;box-shadow:0 4px 14px rgba(0,77,73,.16)}
+.details-tab:hover{background:var(--brand-dark)}
+.details-drawer{position:fixed;left:0;top:0;bottom:0;width:min(520px,92vw);z-index:49;background:#fff;border-right:1px solid var(--line);box-shadow:10px 0 30px rgba(0,0,0,.16);transform:translateX(-102%);transition:transform .2s ease;display:flex;flex-direction:column}
+.details-drawer.open{transform:translateX(0)}
+.details-drawer-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--brand-soft);border-bottom:1px solid var(--brand-line);color:var(--brand-deep)}
+.details-drawer-head strong{font-size:12px;letter-spacing:.45px}
+.details-close{border:0;background:transparent;color:var(--brand-deep);font-size:24px;line-height:1;cursor:pointer;padding:0 2px}
+.details-drawer-body{padding:12px 14px 20px;overflow:auto;display:grid;gap:12px}
+.drawer-card{background:#fff;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.drawer-card h3{margin:0;padding:8px 9px;text-align:center;color:var(--brand-deep);font-size:10px;font-weight:900;background:var(--brand-soft);border-bottom:1px solid var(--brand-line)}
+.drawer-card table{width:100%;border-collapse:collapse;table-layout:fixed}
+.drawer-card th,.drawer-card td{padding:7px 8px;border-bottom:1px solid #edf0f4;font-size:10px;text-align:left;vertical-align:middle;overflow-wrap:anywhere}
+.drawer-card th{font-size:8px;text-transform:uppercase;letter-spacing:.35px;color:var(--muted);background:#fafcfc}
+.drawer-card tr:last-child td{border-bottom:0}
+.drawer-card td.num,.drawer-card th.num{text-align:right}
+.drawer-card .empty{padding:14px;text-align:center}
+.drawer-card .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle}
+.drawer-card .dot.green{background:#39b96b}.drawer-card .dot.amber{background:#e8b63e}.drawer-card .dot.red{background:#e55b65}
 
-.restoration-metrics{display:grid;grid-template-columns:repeat(3,minmax(200px,1fr));gap:10px;margin-top:10px}
-.metric-card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;box-shadow:var(--shadow);text-align:center}
-.metric-card .label{font-size:8px;font-weight:800;letter-spacing:.6px;color:var(--muted)}
-.metric-card .value{font-size:25px;line-height:1.05;margin-top:7px;font-weight:850;color:var(--brand-deep)}
-.metric-card .note{font-size:8px;color:var(--muted);margin-top:5px}
-.summary-card h3{font-size:11px;padding:8px 9px}
-.summary-card th,.summary-card td{padding:6px 8px;font-size:9px}
-.summary-card th{font-size:8px}
-.nap-countbar .count{font-size:10px}.nap-countbar .count b{font-size:18px}
-.nap-summary th,.nap-summary td{padding:9px 9px;font-size:9.5px}
-.nap-summary th{font-size:8.5px}
-.nap-table th,.nap-table td{padding:10px 8px;font-size:9.5px}
-.nap-table th{font-size:8.5px}
-@media(max-width:900px){.restoration-metrics{grid-template-columns:1fr}}
+.nap-summary-wrap{width:min(1060px,100%)}
+.nap-summary th,.nap-summary td{padding:10px 10px;font-size:11px}
+.nap-summary th{font-size:9.5px}
+.nap-summary th:nth-child(1),.nap-summary td:nth-child(1){width:29%}
+.nap-summary th:nth-child(2),.nap-summary td:nth-child(2){width:51%}
+.nap-summary th:nth-child(3),.nap-summary td:nth-child(3){width:20%;text-align:right}
+@media(max-width:720px){.details-drawer{width:92vw}.nap-summary th,.nap-summary td{padding:8px 7px;font-size:9.5px}}
+
 </style>
 </head>
 <body>
@@ -143,11 +141,6 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;co
   <article class="kpi restored"><div class="label">RESTORED</div><div id="restored" class="value">—</div><div class="note">DATABASE FINAL STATUS (FILTERED)</div></article>
 </section>
 
-<section class="restoration-metrics" aria-label="Restoration metrics">
-  <article class="metric-card"><div class="label">AVG RESTORATION</div><div id="avgRestoration" class="value">—</div><div class="note">DATE ENDORSED → DATE RESTORED</div></article>
-  <article class="metric-card"><div class="label">FASTEST</div><div id="fastestRestoration" class="value">—</div><div class="note">MINIMUM TURNAROUND</div></article>
-  <article class="metric-card"><div class="label">SLOWEST</div><div id="slowestRestoration" class="value">—</div><div class="note">MAXIMUM TURNAROUND</div></article>
-</section>
 
 <section class="grid">
   <article class="panel">
@@ -195,36 +188,42 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;co
   </article>
 </section>
 
-<section class="summary-section">
-  <div class="summary-grid">
-    <article class="summary-card">
+
+<button id="detailsTab" class="details-tab" type="button" aria-expanded="false" aria-controls="detailsDrawer">DETAILS</button>
+<aside id="detailsDrawer" class="details-drawer" aria-hidden="true">
+  <div class="details-drawer-head">
+    <strong>OPERATIONS DETAILS</strong>
+    <button id="detailsClose" class="details-close" type="button" aria-label="Close details">×</button>
+  </div>
+  <div class="details-drawer-body">
+    <div class="drawer-card">
       <h3>PENDING BY MUNICIPALITY</h3>
       <table><thead><tr><th>MUNICIPALITY</th><th class="num">COUNT</th><th class="num">%</th></tr></thead><tbody id="pendingMunicipality"></tbody></table>
-    </article>
-    <article class="summary-card">
+    </div>
+    <div class="drawer-card">
       <h3>PENDING BY ISSUE</h3>
       <table><thead><tr><th>ISSUE</th><th class="num">COUNT</th><th class="num">%</th></tr></thead><tbody id="pendingIssue"></tbody></table>
-    </article>
-    <article class="summary-card wide">
+    </div>
+    <div class="drawer-card">
       <h3>TECHNICIAN WORKLOAD</h3>
       <table><thead><tr><th>TECHNICIAN</th><th class="num">ACTIVE</th><th class="num">OLDEST DAYS</th></tr></thead><tbody id="techWorkload"></tbody></table>
-    </article>
-
-    <article class="summary-card">
+    </div>
+    <div class="drawer-card">
       <h3>AGING MONITOR</h3>
       <table><thead><tr><th>CATEGORY</th><th class="num">COUNT</th><th class="num">%</th></tr></thead><tbody id="agingSummary"></tbody></table>
-    </article>
-    <article class="summary-card">
+    </div>
+    <div class="drawer-card">
       <h3>RESTORED BY TECHNICIAN</h3>
       <table><thead><tr><th>TECHNICIAN</th><th class="num">RESTORED</th><th class="num">%</th></tr></thead><tbody id="restoredTechnician"></tbody></table>
-    </article>
-    <article class="summary-card wide">
+    </div>
+    <div class="drawer-card">
       <h3>RESTORED BY MUNICIPALITY</h3>
       <table><thead><tr><th>MUNICIPALITY</th><th class="num">RESTORED</th><th class="num">%</th></tr></thead><tbody id="restoredMunicipality"></tbody></table>
-    </article>
+    </div>
   </div>
-</section>
+</aside>
 
+<footer
 <footer><span id="foot">Source: Google Sheets API</span><span id="updated">Last update —</span></footer>
 </main>
 
@@ -357,23 +356,6 @@ function render(){
 
   $('pending').textContent=fmt(pending);
   $('restored').textContent=fmt(restored);
-
-  const restorationRows = db.filter(r=>norm(r.finalStatus)==='RESTORED');
-  const restorationHours = restorationRows.map(r=>{
-    const e=parseDate(r.dateEndorsed), d=parseDate(r.dateRestored);
-    return e&&d ? Math.max(0,(d.getTime()-e.getTime())/3600000) : null;
-  }).filter(Number.isFinite);
-  const avgRestoration = restorationHours.length ? restorationHours.reduce((a,b)=>a+b,0)/restorationHours.length : null;
-  const fastestRestoration = restorationHours.length ? Math.min(...restorationHours) : null;
-  const slowestRestoration = restorationHours.length ? Math.max(...restorationHours) : null;
-
-  const fmtTurnaround = h => {
-    if(h==null || !Number.isFinite(h)) return '—';
-    return h < 24 ? h.toFixed(1)+' hrs' : Math.floor(h/24)+'d '+(h%24).toFixed(1)+'h';
-  };
-  $('avgRestoration').textContent = avgRestoration==null ? '—' : avgRestoration.toFixed(1)+' hrs';
-  $('fastestRestoration').textContent = fmtTurnaround(fastestRestoration);
-  $('slowestRestoration').textContent = fmtTurnaround(slowestRestoration);
 
   $('statusChart').innerHTML=chart(counts,total);
 
@@ -529,6 +511,17 @@ function bind(){
   $('napClear').addEventListener('click',()=>{S.napFilters={province:'ALL',municipality:'ALL',barangay:'ALL'};render()});
 }
 function tick(){ $('clock').textContent=new Date().toLocaleString() }
+
+function setDetailsOpen(open){
+  const drawer=$('detailsDrawer');
+  const tab=$('detailsTab');
+  drawer.classList.toggle('open',open);
+  drawer.setAttribute('aria-hidden',open?'false':'true');
+  tab.setAttribute('aria-expanded',open?'true':'false');
+}
+$('detailsTab').addEventListener('click',()=>setDetailsOpen(true));
+$('detailsClose').addEventListener('click',()=>setDetailsOpen(false));
+
 bind();tick();setInterval(tick,1000);
 fetchSnapshot();setInterval(fetchSnapshot,REFRESH_MS);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)fetchSnapshot()});
