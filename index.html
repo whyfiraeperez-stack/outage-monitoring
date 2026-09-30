@@ -84,15 +84,21 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;co
 .details-close{border:0;background:transparent;color:var(--brand-deep);font-size:24px;line-height:1;cursor:pointer;padding:0 2px}
 .details-drawer-body{padding:12px 14px 20px;overflow:auto;display:grid;gap:12px}
 .drawer-card{background:#fff;border:1px solid var(--line);border-radius:9px;overflow:hidden}
-.drawer-card h3{margin:0;padding:8px 9px;text-align:center;color:var(--brand-deep);font-size:10px;font-weight:900;background:var(--brand-soft);border-bottom:1px solid var(--brand-line)}
+.drawer-card-head{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0;padding:9px 10px;border:0;color:var(--brand-deep);font-size:10px;font-weight:900;background:var(--brand-soft);border-bottom:1px solid var(--brand-line);cursor:pointer;text-align:left}
+.drawer-card-head:hover{background:#e3f3f1}
+.drawer-card-head .chevron{font-size:12px;line-height:1;transition:transform .18s ease}
+.drawer-card.collapsed .chevron{transform:rotate(-90deg)}
+.drawer-card.collapsed .drawer-card-body{display:none}
+.drawer-card-body{display:block;max-height:250px;overflow:auto}
 .drawer-card table{width:100%;border-collapse:collapse;table-layout:fixed}
-.drawer-card th,.drawer-card td{padding:7px 8px;border-bottom:1px solid #edf0f4;font-size:10px;text-align:left;vertical-align:middle;overflow-wrap:anywhere}
-.drawer-card th{font-size:8px;text-transform:uppercase;letter-spacing:.35px;color:var(--muted);background:#fafcfc}
+.drawer-card th,.drawer-card td{padding:8px 8px;border-bottom:1px solid #edf0f4;font-size:10px;text-align:left;vertical-align:middle;overflow-wrap:anywhere}
+.drawer-card th{font-size:8px;text-transform:uppercase;letter-spacing:.35px;color:var(--muted);background:#fafcfc;position:sticky;top:0;z-index:1}
 .drawer-card tr:last-child td{border-bottom:0}
 .drawer-card td.num,.drawer-card th.num{text-align:right}
 .drawer-card .empty{padding:14px;text-align:center}
 .drawer-card .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle}
 .drawer-card .dot.green{background:#39b96b}.drawer-card .dot.amber{background:#e8b63e}.drawer-card .dot.red{background:#e55b65}
+@media(max-width:720px){.drawer-card-body{max-height:220px}}
 
 .nap-summary-wrap{width:min(1060px,100%)}
 .nap-summary th,.nap-summary td{padding:10px 10px;font-size:11px}
@@ -196,30 +202,30 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;co
     <button id="detailsClose" class="details-close" type="button" aria-label="Close details">×</button>
   </div>
   <div class="details-drawer-body">
-    <div class="drawer-card">
-      <h3>PENDING BY MUNICIPALITY</h3>
-      <table><thead><tr><th>MUNICIPALITY</th><th class="num">COUNT</th><th class="num">%</th></tr></thead><tbody id="pendingMunicipality"></tbody></table>
-    </div>
-    <div class="drawer-card">
-      <h3>PENDING BY ISSUE</h3>
-      <table><thead><tr><th>ISSUE</th><th class="num">COUNT</th><th class="num">%</th></tr></thead><tbody id="pendingIssue"></tbody></table>
-    </div>
-    <div class="drawer-card">
-      <h3>TECHNICIAN WORKLOAD</h3>
-      <table><thead><tr><th>TECHNICIAN</th><th class="num">ACTIVE</th><th class="num">OLDEST DAYS</th></tr></thead><tbody id="techWorkload"></tbody></table>
-    </div>
-    <div class="drawer-card">
-      <h3>AGING MONITOR</h3>
-      <table><thead><tr><th>CATEGORY</th><th class="num">COUNT</th><th class="num">%</th></tr></thead><tbody id="agingSummary"></tbody></table>
-    </div>
-    <div class="drawer-card">
-      <h3>RESTORED BY TECHNICIAN</h3>
-      <table><thead><tr><th>TECHNICIAN</th><th class="num">RESTORED</th><th class="num">%</th></tr></thead><tbody id="restoredTechnician"></tbody></table>
-    </div>
-    <div class="drawer-card">
-      <h3>RESTORED BY MUNICIPALITY</h3>
-      <table><thead><tr><th>MUNICIPALITY</th><th class="num">RESTORED</th><th class="num">%</th></tr></thead><tbody id="restoredMunicipality"></tbody></table>
-    </div>
+    <section class="drawer-card" data-detail-card>
+      <button class="drawer-card-head" type="button" aria-expanded="true"><span>PENDING BY MUNICIPALITY</span><span class="chevron">⌄</span></button>
+      <div class="drawer-card-body"><table><thead><tr><th>MUNICIPALITY</th><th class="num">COUNT</th><th class="num">%</th></tr></thead><tbody id="pendingMunicipality"></tbody></table></div>
+    </section>
+    <section class="drawer-card" data-detail-card>
+      <button class="drawer-card-head" type="button" aria-expanded="true"><span>PENDING BY ISSUE</span><span class="chevron">⌄</span></button>
+      <div class="drawer-card-body"><table><thead><tr><th>ISSUE</th><th class="num">COUNT</th><th class="num">%</th></tr></thead><tbody id="pendingIssue"></tbody></table></div>
+    </section>
+    <section class="drawer-card" data-detail-card>
+      <button class="drawer-card-head" type="button" aria-expanded="true"><span>TECHNICIAN WORKLOAD</span><span class="chevron">⌄</span></button>
+      <div class="drawer-card-body"><table><thead><tr><th>TECHNICIAN</th><th class="num">ACTIVE</th><th class="num">OLDEST DAYS</th></tr></thead><tbody id="techWorkload"></tbody></table></div>
+    </section>
+    <section class="drawer-card" data-detail-card>
+      <button class="drawer-card-head" type="button" aria-expanded="true"><span>AGING MONITOR</span><span class="chevron">⌄</span></button>
+      <div class="drawer-card-body"><table><thead><tr><th>CATEGORY</th><th class="num">COUNT</th><th class="num">%</th></tr></thead><tbody id="agingSummary"></tbody></table></div>
+    </section>
+    <section class="drawer-card" data-detail-card>
+      <button class="drawer-card-head" type="button" aria-expanded="true"><span>RESTORED BY TECHNICIAN</span><span class="chevron">⌄</span></button>
+      <div class="drawer-card-body"><table><thead><tr><th>TECHNICIAN</th><th class="num">RESTORED</th><th class="num">%</th></tr></thead><tbody id="restoredTechnician"></tbody></table></div>
+    </section>
+    <section class="drawer-card" data-detail-card>
+      <button class="drawer-card-head" type="button" aria-expanded="true"><span>RESTORED BY MUNICIPALITY</span><span class="chevron">⌄</span></button>
+      <div class="drawer-card-body"><table><thead><tr><th>MUNICIPALITY</th><th class="num">RESTORED</th><th class="num">%</th></tr></thead><tbody id="restoredMunicipality"></tbody></table></div>
+    </section>
   </div>
 </aside>
 
@@ -521,6 +527,13 @@ function setDetailsOpen(open){
 }
 $('detailsTab').addEventListener('click',()=>setDetailsOpen(true));
 $('detailsClose').addEventListener('click',()=>setDetailsOpen(false));
+document.querySelectorAll('[data-detail-card] .drawer-card-head').forEach(head=>{
+  head.addEventListener('click',()=>{
+    const card=head.closest('[data-detail-card]');
+    const collapsed=card.classList.toggle('collapsed');
+    head.setAttribute('aria-expanded',String(!collapsed));
+  });
+});
 
 bind();tick();setInterval(tick,1000);
 fetchSnapshot();setInterval(fetchSnapshot,REFRESH_MS);
