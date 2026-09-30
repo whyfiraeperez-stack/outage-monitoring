@@ -216,20 +216,7 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;co
     <div class="note-line">Displayed fields are read from the NAP DOWN sheet exactly as returned by Google Sheets.</div>
     </article>
 
-    <article class="panel mini-status-card">
-      <div class="panel-head">
-        <div><h2>PENDING VS RESTORED</h2><div class="mini-desc">Current filtered DATABASE FINAL STATUS</div></div>
-      </div>
-      <div id="pendingRestoredChart" class="status-pie-wrap">
-        <div class="status-pie" style="background:conic-gradient(#b33a4a 0 50%, #008d87 50% 100%)">
-          <div class="status-pie-center"><small>Total</small><b>—</b></div>
-        </div>
-        <div class="status-legend">
-          <div class="status-legend-row"><span class="status-legend-dot" style="background:#b33a4a"></span><span class="status-legend-name">PENDING</span><span class="status-legend-value">—</span></div>
-          <div class="status-legend-row"><span class="status-legend-dot" style="background:#008d87"></span><span class="status-legend-name">RESTORED</span><span class="status-legend-value">—</span></div>
-        </div>
-      </div>
-    </article>
+
   </div>
 </section>
 
@@ -401,20 +388,6 @@ function render(){
 
   $('pending').textContent=fmt(pending);
   $('restored').textContent=fmt(restored);
-
-  const totalPR = pending + restored;
-  const pendingPct = totalPR ? (pending / totalPR) * 100 : 0;
-  const restoredPct = totalPR ? (restored / totalPR) * 100 : 0;
-  const pieEl = $('pendingRestoredChart');
-  if (pieEl) {
-    const pie = pieEl.querySelector('.status-pie');
-    const center = pieEl.querySelector('.status-pie-center b');
-    const vals = pieEl.querySelectorAll('.status-legend-value');
-    pie.style.background = 'conic-gradient(#b33a4a 0 '+pendingPct+'%, #008d87 '+pendingPct+'% 100%)';
-    center.textContent = fmt(totalPR);
-    if (vals[0]) vals[0].textContent = fmt(pending);
-    if (vals[1]) vals[1].textContent = fmt(restored);
-  }
 
   $('statusChart').innerHTML=chart(counts,total);
 
