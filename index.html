@@ -74,6 +74,21 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;co
 .loading{padding:30px;text-align:center;color:var(--muted);font-size:10px}
 @media(max-width:1150px){.grid{grid-template-columns:1fr}.data-health{grid-template-columns:repeat(2,1fr)}.filters{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:720px){body{padding:9px}.top{display:block}.top-right{justify-content:flex-start;margin-top:10px}.filters{grid-template-columns:1fr}.kpis{grid-template-columns:1fr}.data-health{grid-template-columns:1fr}.nap-filters{grid-template-columns:1fr 1fr}.nap-clear{width:100%}.nap-countbar{display:block}.nap-countbar .sort-note{margin-top:4px;text-align:left}.nap-table th,.nap-table td{padding:7px 5px;font-size:7.5px}.donut-wrap{flex-direction:column}.legend{width:100%}}
+
+.summary-section{margin-top:18px}
+.summary-grid{display:grid;grid-template-columns:1fr 1fr 1.25fr;gap:12px}
+.summary-card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:0;overflow:hidden;box-shadow:var(--shadow)}
+.summary-card h3{margin:0;padding:7px 9px;text-align:center;color:var(--brand-deep);font-size:10px;font-weight:900;border-bottom:1px solid var(--line);background:var(--brand-soft);letter-spacing:.2px}
+.summary-card table{width:100%;border-collapse:collapse;table-layout:fixed}
+.summary-card th,.summary-card td{padding:5px 7px;border-bottom:1px solid #edf0f4;font-size:8.5px;text-align:left;vertical-align:middle;overflow-wrap:anywhere}
+.summary-card th{font-size:7.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);background:#fafcfc}
+.summary-card tr:last-child td{border-bottom:0}
+.summary-card td.num,.summary-card th.num{text-align:right}
+.summary-card .empty{padding:14px}
+.summary-card .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:middle}
+.summary-card .dot.green{background:#39b96b}.summary-card .dot.amber{background:#e8b63e}.summary-card .dot.red{background:#e55b65}
+@media(max-width:1150px){.summary-grid{grid-template-columns:1fr 1fr}.summary-grid .wide{grid-column:1/-1}}
+@media(max-width:720px){.summary-grid{grid-template-columns:1fr}.summary-grid .wide{grid-column:auto}}
 </style>
 </head>
 <body>
@@ -158,6 +173,36 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;co
     </div>
     <div class="note-line">Displayed fields are read from the NAP DOWN sheet exactly as returned by Google Sheets.</div>
   </article>
+</section>
+
+<section class="summary-section">
+  <div class="summary-grid">
+    <article class="summary-card">
+      <h3>PENDING BY MUNICIPALITY</h3>
+      <table><thead><tr><th>MUNICIPALITY</th><th class="num">COUNT</th><th class="num">%</th></tr></thead><tbody id="pendingMunicipality"></tbody></table>
+    </article>
+    <article class="summary-card">
+      <h3>PENDING BY ISSUE</h3>
+      <table><thead><tr><th>ISSUE</th><th class="num">COUNT</th><th class="num">%</th></tr></thead><tbody id="pendingIssue"></tbody></table>
+    </article>
+    <article class="summary-card wide">
+      <h3>TECHNICIAN WORKLOAD</h3>
+      <table><thead><tr><th>TECHNICIAN</th><th class="num">ACTIVE</th><th class="num">OLDEST DAYS</th></tr></thead><tbody id="techWorkload"></tbody></table>
+    </article>
+
+    <article class="summary-card">
+      <h3>AGING MONITOR</h3>
+      <table><thead><tr><th>CATEGORY</th><th class="num">COUNT</th><th class="num">%</th></tr></thead><tbody id="agingSummary"></tbody></table>
+    </article>
+    <article class="summary-card">
+      <h3>RESTORED BY TECHNICIAN</h3>
+      <table><thead><tr><th>TECHNICIAN</th><th class="num">RESTORED</th><th class="num">%</th></tr></thead><tbody id="restoredTechnician"></tbody></table>
+    </article>
+    <article class="summary-card wide">
+      <h3>RESTORED BY MUNICIPALITY</h3>
+      <table><thead><tr><th>MUNICIPALITY</th><th class="num">RESTORED</th><th class="num">%</th></tr></thead><tbody id="restoredMunicipality"></tbody></table>
+    </article>
+  </div>
 </section>
 
 <footer><span id="foot">Source: Google Sheets API</span><span id="updated">Last update —</span></footer>
@@ -294,6 +339,68 @@ function render(){
   $('restored').textContent=fmt(restored);
 
   $('statusChart').innerHTML=chart(counts,total);
+
+  const ageDays = r => {
+    const e = parseDate(r.dateEndorsed);
+    if(!e) return null;
+    const rs = parseDate(r.dateRestored);
+    const end = rs || new Date();
+    return Math.max(0, (end.getTime() - e.getTime()) / 86400000);
+  };
+  const turnaroundHours = r => {
+    const e = parseDate(r.dateEndorsed), rs = parseDate(r.dateRestored);
+    if(!e || !rs) return null;
+    return Math.max(0, (rs.getTime() - e.getTime()) / 3600000);
+  };
+  const groupRows = (rows, getter) => {
+    const m = {};
+    for (const r of rows) {
+      const k = clean(getter(r)) || 'UNSPECIFIED';
+      m[k] = (m[k] || 0) + 1;
+    }
+    return Object.entries(m).map(([label,count])=>({label,count}))
+      .sort((a,b)=>b.count-a.count || a.label.localeCompare(b.label,undefined,{sensitivity:'base'}));
+  };
+  const pendingRows = db.filter(r=>norm(r.finalStatus)==='PENDING');
+  const restoredRows = db.filter(r=>norm(r.finalStatus)==='RESTORED');
+
+  const municipalitySummary = groupRows(pendingRows,r=>r.municipality);
+  const issueSummary = groupRows(pendingRows,r=>r.napStatus || r.concern || r.rfo);
+  const techSummary = groupRows(pendingRows,r=>r.ospTeam).map(x=>{
+    const members=pendingRows.filter(r=>(clean(r.ospTeam)||'UNSPECIFIED')===x.label);
+    return {...x,oldest:Math.max(...members.map(ageDays).filter(Number.isFinite),0)};
+  });
+
+  $('pendingMunicipality').innerHTML=municipalitySummary.length
+    ? municipalitySummary.map(x=>'<tr><td>'+esc(x.label)+'</td><td class="num">'+fmt(x.count)+'</td><td class="num">'+(pendingRows.length?(x.count/pendingRows.length*100).toFixed(1):'0.0')+'%</td></tr>').join('')
+    : '<tr><td colspan="3" class="empty">No matching rows.</td></tr>';
+
+  $('pendingIssue').innerHTML=issueSummary.length
+    ? issueSummary.map(x=>'<tr><td>'+esc(x.label)+'</td><td class="num">'+fmt(x.count)+'</td><td class="num">'+(pendingRows.length?(x.count/pendingRows.length*100).toFixed(1):'0.0')+'%</td></tr>').join('')
+    : '<tr><td colspan="3" class="empty">No matching rows.</td></tr>';
+
+  $('techWorkload').innerHTML=techSummary.length
+    ? techSummary.map(x=>'<tr><td>'+esc(x.label)+'</td><td class="num">'+fmt(x.count)+'</td><td class="num">'+x.oldest.toFixed(1)+'</td></tr>').join('')
+    : '<tr><td colspan="3" class="empty">No matching rows.</td></tr>';
+
+  const ageNew=pendingRows.filter(r=>{const d=ageDays(r);return d!==null&&d<=1}).length;
+  const ageAging=pendingRows.filter(r=>{const d=ageDays(r);return d!==null&&d>1&&d<4}).length;
+  const ageCritical=pendingRows.filter(r=>{const d=ageDays(r);return d!==null&&d>=4}).length;
+  $('agingSummary').innerHTML=[
+    ['NEW (0–1 DAY)',ageNew,'green'],
+    ['AGING (2–3 DAYS)',ageAging,'amber'],
+    ['CRITICAL (4+ DAYS)',ageCritical,'red']
+  ].map(x=>'<tr><td><span class="dot '+x[2]+'"></span>'+x[0]+'</td><td class="num">'+fmt(x[1])+'</td><td class="num">'+(pendingRows.length?(x[1]/pendingRows.length*100).toFixed(1):'0.0')+'%</td></tr>').join('');
+
+  const restoredTech=groupRows(restoredRows,r=>r.ospTeam);
+  const restoredMunicipality=groupRows(restoredRows,r=>r.municipality);
+  $('restoredTechnician').innerHTML=restoredTech.length
+    ? restoredTech.map(x=>'<tr><td>'+esc(x.label)+'</td><td class="num">'+fmt(x.count)+'</td><td class="num">'+(restoredRows.length?(x.count/restoredRows.length*100).toFixed(1):'0.0')+'%</td></tr>').join('')
+    : '<tr><td colspan="3" class="empty">No matching rows.</td></tr>';
+  $('restoredMunicipality').innerHTML=restoredMunicipality.length
+    ? restoredMunicipality.map(x=>'<tr><td>'+esc(x.label)+'</td><td class="num">'+fmt(x.count)+'</td><td class="num">'+(restoredRows.length?(x.count/restoredRows.length*100).toFixed(1):'0.0')+'%</td></tr>').join('')
+    : '<tr><td colspan="3" class="empty">No matching rows.</td></tr>';
+
   $('dbRows').textContent=fmt(S.snap?.diagnostics?.databaseRows);
   $('formulaErrors').textContent=fmt(S.snap?.diagnostics?.formulaErrors);
   $('lastVerified').textContent=S.snap?.checkedAt?new Date(S.snap.checkedAt).toLocaleTimeString():'—';
