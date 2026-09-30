@@ -6,313 +6,388 @@
 <title>BICOL NAP OUTAGE MONITORING</title>
 <style>
 :root{
-  --bg:#f5f7f7;--surface:#fff;--line:#1f2937;--soft:#d8e1e1;--text:#0f172a;--muted:#66757a;
-  --brand:#008d87;--brand-deep:#004e4a;--brand-soft:#eaf6f5;--green:#18804f;--amber:#d68a00;--red:#d62f3d;
+  --bg:#f4f8f8;--surface:#fff;--surface-2:#f7fbfb;--line:#d7e6e4;--text:#132a2b;--muted:#627475;
+  --brand:#008d87;--brand-dark:#006f6b;--brand-deep:#004e4a;--brand-soft:#e8f6f4;--brand-line:#bcdad7;
+  --green:#147a52;--red:#b33a4a;--amber:#a96900;--blue:#0b7480;--shadow:0 2px 12px rgba(0,77,73,.06)
 }
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--text);font:12px/1.25 Arial,Helvetica,sans-serif}
-body{padding:12px}
-main{max-width:1600px;margin:0 auto}
-.top{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-bottom:8px}
-.brand{display:flex;align-items:center;gap:13px}
-.brand-logo{width:128px;height:34px;object-fit:contain;object-position:left center;display:block}
-.brand h1{margin:0;font-size:25px;line-height:1;font-weight:900;letter-spacing:.25px;color:#071a34}
-.brand .sub{margin-top:3px;font-size:9px;color:var(--muted);font-weight:700}
-.top-right{display:flex;align-items:center;gap:7px;flex-wrap:wrap;justify-content:flex-end}
-.badge{height:28px;display:flex;align-items:center;gap:6px;padding:0 10px;border:1px solid #bfe4dc;border-radius:999px;background:#f3fcfa;color:var(--brand-deep);font-size:8px;font-weight:900}
-.badge i{width:7px;height:7px;border-radius:50%;background:#1db777}
-.clock{font-size:8px;color:var(--muted)}
-.controls{display:flex;gap:7px;align-items:end;margin-bottom:8px;flex-wrap:wrap}
-.field{display:flex;flex-direction:column;gap:3px}
-.field label{font-size:8px;font-weight:900;letter-spacing:.45px;color:var(--muted)}
-select{height:30px;min-width:150px;border:1px solid #bfcdd0;border-radius:4px;background:#fff;padding:0 8px;font-size:10px}
-button{height:30px;border:1px solid #bfcdd0;background:#fff;border-radius:4px;padding:0 10px;font-size:9px;font-weight:800;cursor:pointer}
-.source-line{border-top:3px solid #747474;margin:2px 0 10px;padding:3px 0 0;text-align:center;font-size:8px;font-weight:700;font-style:italic;color:#1e293b}
-
-.section{margin:10px 0 4px;text-align:center;font-size:13px;font-weight:900;letter-spacing:.1px}
-.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:0;background:#fff;border:1px solid var(--line)}
-.kpi{min-height:74px;border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
-.kpi:last-child{border-right:0}
-.kpi .label{font-family:Georgia,"Times New Roman",serif;font-size:12px;font-weight:900}
-.kpi .value{font-family:Georgia,"Times New Roman",serif;font-size:16px;font-weight:900;margin-top:3px}
-.kpi.pending .value,.kpi.critical .value{color:#111}
-.kpi .note{font-size:7px;color:var(--muted);margin-top:2px}
-.kpi.pending{border-top:1px solid var(--line)} .kpi.restored .value{color:#111} .kpi.new .value{color:#111}
-.kpis + .kpis{margin-top:8px}
-
-.cards{display:grid;grid-template-columns:1fr 1fr 1.25fr;gap:12px;margin-top:10px}
-.card{background:#fff;border:1px solid var(--line)}
-.card h3{margin:0;padding:6px 8px;text-align:center;border-bottom:1px solid var(--line);font-family:Georgia,"Times New Roman",serif;font-size:11px;font-weight:900}
-.table{width:100%;border-collapse:collapse;table-layout:fixed}
-.table th,.table td{border-bottom:1px solid #d7dde0;padding:4px 6px;vertical-align:middle;overflow-wrap:anywhere}
-.table tr:last-child td{border-bottom:0}
-.table th{font-family:Georgia,"Times New Roman",serif;background:#f7f8f9;font-size:8px;font-weight:900;text-transform:uppercase}
-.table td{font-size:8.5px}
-.num{text-align:right}
-.center{text-align:center}
-
-.aging-monitor td:first-child{padding-left:9px}
-.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle}
-.dot.green{background:#39ba68}.dot.amber{background:#f0bf4a}.dot.red{background:#ef5d67}
-
-.details{margin-top:12px;display:grid;gap:12px}
-.detail{background:#fff;border:1px solid var(--line)}
-.detail-head{padding:7px 8px;border-bottom:1px solid var(--line);text-align:center;font-family:Georgia,"Times New Roman",serif;font-size:11px;font-weight:900}
-.detail-wrap{overflow:auto;max-height:410px}
-.detail table{min-width:980px}
-.detail th{position:sticky;top:0;z-index:2;background:#e8ecee}
-.status-badge{display:inline-block;padding:2px 6px;border-radius:12px;font-size:7px;font-weight:900}
-.status-new{background:#d8f2dc;color:#0e6b2f}.status-age{background:#fff1bd;color:#7a5a00}.status-critical{background:#ffd9dd;color:#9e1722}.status-restored{background:#d8f2dc;color:#0e6b2f}
-
-.nap-panel{margin-top:14px;background:#fff;border:1px solid #c7d7d7;border-radius:8px;overflow:hidden}
-.nap-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 12px;background:var(--brand-soft);border-bottom:1px solid #b9d6d3}
-.nap-head strong{font-size:13px;color:var(--brand-deep);letter-spacing:.2px}.nap-head span{font-size:8px;color:var(--muted);text-align:right}
-.nap-summary{width:100%;border-collapse:collapse;table-layout:fixed}
-.nap-summary th{background:#e4f2f1;color:var(--brand-deep);font-size:9px;padding:8px 7px;border-bottom:1px solid #c8d8d8;text-align:left}
-.nap-summary td{font-size:10px;padding:8px 7px;border-bottom:1px solid #e1e8e8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.nap-summary th:nth-child(1),.nap-summary td:nth-child(1){width:45%}.nap-summary th:nth-child(2),.nap-summary td:nth-child(2){width:45%}.nap-summary th:nth-child(3),.nap-summary td:nth-child(3){width:10%;text-align:right}
-.nap-detail-wrap{overflow:auto;max-height:560px;border-top:1px solid #dce6e6}
-.nap-detail{min-width:1100px;width:100%;border-collapse:collapse;table-layout:fixed}
-.nap-detail th{position:sticky;top:0;background:#e4f2f1;color:var(--brand-deep);font-size:9px;padding:9px 7px;border-bottom:1px solid #c8d8d8;text-align:left;z-index:2}
-.nap-detail td{font-size:10px;padding:9px 7px;border-bottom:1px solid #e5eded;vertical-align:top;overflow-wrap:anywhere}
-.nap-detail th:nth-child(1){width:10%}.nap-detail th:nth-child(2){width:11%}.nap-detail th:nth-child(3){width:11%}.nap-detail th:nth-child(4){width:12%}
-.nap-detail th:nth-child(5){width:15%}.nap-detail th:nth-child(6){width:14%}.nap-detail th:nth-child(7){width:9%}.nap-detail th:nth-child(8){width:18%}
-
-.empty{padding:14px!important;text-align:center;color:#93a0a5}
-.footer{display:flex;justify-content:space-between;gap:8px;margin-top:7px;color:#718086;font-size:8px}
-.error{display:none;padding:8px 10px;margin:6px 0;background:#fff0f2;border:1px solid #e3b4ba;color:#932a38;border-radius:5px;font-size:9px}
-
-@media(max-width:1100px){.brand h1{font-size:20px}.cards{grid-template-columns:1fr 1fr}.cards .card:last-child{grid-column:1/-1}}
-@media(max-width:760px){body{padding:7px}.top{display:block}.top-right{justify-content:flex-start;margin-top:7px}.brand-logo{width:100px}.brand h1{font-size:17px}.kpis{grid-template-columns:repeat(2,1fr)}.kpi:nth-child(2){border-right:0}.kpi:nth-child(3){border-top:1px solid var(--line)}.cards{grid-template-columns:1fr}.cards .card:last-child{grid-column:auto}.controls{align-items:stretch}.field{flex:1;min-width:150px}.nap-head{display:block}.nap-head span{display:block;margin-top:4px;text-align:left}}
+html,body{margin:0;background:var(--bg);color:var(--text);font:13px/1.45 Arial,Helvetica,sans-serif}
+body{padding:18px}
+main{max-width:1680px;margin:0 auto}
+.top{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin-bottom:14px}
+.brand{display:flex;gap:14px;align-items:center;min-height:48px}
+ .brand-logo{width:72px;height:72px;object-fit:contain;display:block;flex:0 0 72px}.mark{display:none}
+h1{font-size:22px;line-height:1.15;margin:0;font-weight:850;color:var(--brand-deep);letter-spacing:.15px}
+.subtitle{display:none}.brand-accent{color:var(--brand);font-weight:800}
+.top-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:8px 11px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:9px;font-weight:800;color:#384653}
+.pill i{width:7px;height:7px;border-radius:50%;background:#adb8c3;display:inline-block}
+.pill.ok{background:var(--brand-soft);border-color:var(--brand-line);color:var(--brand-deep)}.pill.ok i{background:var(--brand)}
+.pill.bad{background:#fff1f3;border-color:#efc9cf;color:#92293a}.pill.bad i{background:#c83d50}
+.pill.info{background:#f2f7fb;border-color:#d8e7f3;color:#2e607e}.pill.info i{background:#6c9fc1}
+.time{font-size:9px;color:var(--muted)}
+.control{display:flex;flex-direction:column;gap:4px}.control label{font-size:8px;font-weight:800;color:var(--muted);letter-spacing:.55px}.control select{height:34px;min-width:145px;border:1px solid #c6d7d5;border-radius:7px;background:#fff;padding:0 9px;color:#20303e;font-size:10px;outline:none}.control select:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(0,141,135,.10)}
+.info,.alert{padding:10px 12px;border-radius:8px;margin-bottom:10px;font-size:10px;display:none;white-space:pre-wrap}
+.info{background:#f0f6fb;border:1px solid #d6e5f1;color:#28526f}.alert{background:#fff1f3;border:1px solid #efc9cf;color:#8f2b3a}
+.filters{display:grid;grid-template-columns:repeat(6,minmax(120px,1fr));gap:8px;background:var(--surface);border:1px solid var(--line);border-top:3px solid var(--brand);border-radius:10px;padding:10px;box-shadow:var(--shadow)}
+.meta{padding:8px 1px 10px;color:var(--muted);font-size:9px}.meta b{color:#273744}
+.kpis{display:grid;grid-template-columns:repeat(2,minmax(200px,1fr));gap:10px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;box-shadow:var(--shadow)}
+.kpi .label{font-size:8px;font-weight:800;letter-spacing:.6px;color:var(--muted)}
+.kpi .value{font-size:30px;line-height:1;margin-top:7px;font-weight:850}
+.kpi .note{font-size:8.5px;color:var(--muted);margin-top:6px}
+.kpi.pending{border-top:3px solid var(--red)}.kpi.restored{border-top:3px solid var(--brand)}.kpi.nap{border-top:3px solid var(--blue)}
+.grid{display:block;margin-top:10px}.grid > .panel + .panel{margin-top:18px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;box-shadow:var(--shadow);min-width:0}
+.panel-head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.panel h2{font-size:12px;margin:0;color:var(--brand-deep)}.panel .desc{font-size:9px;color:var(--muted);margin-top:3px}
+.chart{min-height:265px;display:flex;align-items:center;justify-content:center}.panel{overflow:hidden}
+.donut-wrap{display:flex;align-items:center;justify-content:center;gap:24px;width:100%}
+.donut{width:190px;height:190px;border-radius:50%;position:relative;flex:0 0 190px;background:#e7edf2}
+.donut:after{content:"";position:absolute;inset:43px;background:#fff;border-radius:50%;box-shadow:0 0 0 1px #eef1f4}
+.donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1;text-align:center}
+.donut-center small{font-size:8px;color:var(--muted);letter-spacing:.55px;text-transform:uppercase}.donut-center b{font-size:24px;margin-top:3px}
+.legend{display:grid;gap:8px;min-width:210px}.legend-row{display:grid;grid-template-columns:9px 1fr auto;gap:7px;align-items:center;font-size:9px}.dot{width:8px;height:8px;border-radius:50%}.legend-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.legend-value{font-weight:800}.legend-share{font-weight:400;color:var(--muted);margin-left:4px}
+.nap-table-wrap{overflow:hidden;border:1px solid var(--line);border-radius:8px;margin-top:10px}
+.nap-table{width:100%;table-layout:fixed;border-collapse:collapse}
+.nap-table th,.nap-table td{padding:8px 7px;border-bottom:1px solid #edf0f4;text-align:left;vertical-align:top;overflow-wrap:anywhere;word-break:break-word}
+.nap-table th{position:sticky;top:0;background:var(--brand-soft);z-index:2;color:var(--brand-deep);font-size:8px;text-transform:uppercase;letter-spacing:.45px}
+.nap-table td{font-size:8.5px;white-space:normal}
+.nap-table th:nth-child(1){width:11%}.nap-table th:nth-child(2){width:11%}.nap-table th:nth-child(3){width:11%}.nap-table th:nth-child(4){width:13%}
+.nap-table th:nth-child(5){width:15%}.nap-table th:nth-child(6){width:13%}.nap-table th:nth-child(7){width:9%}.nap-table th:nth-child(8){width:17%}
+.nap-table td.finding{white-space:normal}.nap-table td.duration{font-weight:800}
+.nap-filters{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;margin-top:10px;padding:8px;background:#f8fafc;border:1px solid #e7ecf1;border-radius:8px}
+.nap-filter{display:flex;flex-direction:column;gap:4px}.nap-filter label{font-size:7px;font-weight:800;color:var(--muted);letter-spacing:.5px}.nap-filter select{height:31px;border:1px solid #c6d7d5;border-radius:6px;background:#fff;padding:0 8px;font-size:9px;color:#24313d;outline:none}.nap-filter select:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(0,141,135,.08)}
+.nap-clear{height:31px;align-self:end;border:1px solid var(--brand-line);border-radius:6px;background:#fff;padding:0 10px;font-size:9px;font-weight:800;color:var(--brand-deep);cursor:pointer}.nap-clear:hover{background:var(--brand-soft);border-color:var(--brand)}
+.nap-filter-meta{margin-top:6px;font-size:8px;color:var(--muted)}
+.nap-countbar{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:10px;padding:8px 10px;background:var(--brand-soft);border:1px solid var(--brand-line);border-radius:8px}
+.nap-countbar .count{font-size:9px;font-weight:850;letter-spacing:.4px;color:var(--brand-deep)}.nap-countbar .count b{font-size:16px;margin-left:4px}.nap-countbar .sort-note{font-size:8px;color:var(--muted);text-align:right}
+.nap-summary-wrap{margin-top:8px;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.nap-summary{width:100%;border-collapse:collapse;table-layout:fixed}.nap-summary th,.nap-summary td{padding:7px 8px;border-bottom:1px solid #edf0f4;font-size:8.5px;text-align:left}
+.nap-summary th{background:var(--brand-soft);color:var(--brand-deep);font-size:8px;text-transform:uppercase;letter-spacing:.45px}.nap-summary td:last-child,.nap-summary th:last-child{text-align:right;width:12%}
+.nap-summary td:nth-child(1){width:30%}.nap-summary td:nth-child(2){width:58%}
+.note-line{font-size:8px;color:var(--muted);margin-top:8px}
+.empty{padding:24px;text-align:center;color:#7c8996;font-size:9px}
+.data-health{display:none}.health-card{transition:border-color .15s ease,box-shadow .15s ease}.health-card:hover{border-color:var(--brand-line);box-shadow:0 2px 8px rgba(0,77,73,.05)}
+.health-card{background:var(--surface-2);border:1px solid #e8edf2;border-radius:8px;padding:9px}.health-card small{display:block;color:var(--muted);font-size:8px}.health-card b{font-size:13px;margin-top:3px;display:block}
+footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;color:#7c8996;font-size:8px}
+.loading{padding:30px;text-align:center;color:var(--muted);font-size:10px}
+@media(max-width:1150px){.grid{grid-template-columns:1fr}.data-health{grid-template-columns:repeat(2,1fr)}.filters{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:720px){body{padding:9px}.top{display:block}.top-right{justify-content:flex-start;margin-top:10px}.filters{grid-template-columns:1fr}.kpis{grid-template-columns:1fr}.data-health{grid-template-columns:1fr}.nap-filters{grid-template-columns:1fr 1fr}.nap-clear{width:100%}.nap-countbar{display:block}.nap-countbar .sort-note{margin-top:4px;text-align:left}.nap-table th,.nap-table td{padding:7px 5px;font-size:7.5px}.donut-wrap{flex-direction:column}.legend{width:100%}}
 </style>
 </head>
 <body>
 <main>
 <header class="top">
   <div class="brand">
-    <img class="brand-logo" src="https://content.convergeict.com/assets/3cfb20d7-32fe-4250-b7cd-544a76b76eaa.png" alt="Converge">
-    <div><h1>BICOL NAP OUTAGE MONITORING</h1><div class="sub">CONVERGE ICT SOLUTIONS INC.</div></div>
+    <img class="brand-logo" src="https://content.convergeict.com/assets/25c65629-d1ee-43a3-82bd-5bed31ecbf06.svg" alt="Converge">
+    <div>
+      <h1>BICOL NAP OUTAGE MONITORING</h1>
+      <div class="subtitle" style="display:none"></div>
+    </div>
   </div>
   <div class="top-right">
-    <div id="sync" class="badge"><i></i>SYNC AGENT • CHECKING</div>
-    <div id="clock" class="clock">—</div>
+    <span id="syncBadge" class="pill info"><i></i>SYNC AGENT • CHECKING</span>
+    <span id="clock" class="time">—</span>
+    <div class="control"><label>MONTH</label><select id="month"></select></div>
+    <div class="control"><label>DATE</label><select id="date"></select></div>
   </div>
 </header>
 
-<div class="controls">
-  <div class="field"><label>PROVINCE</label><select id="province"><option value="ALL">All provinces</option></select></div>
-  <div class="field"><label>MONITORING DATE</label><select id="date"><option value="ALL">All dates</option></select></div>
-  <button id="reset">RESET</button>
-</div>
+<div id="alert" class="alert"></div>
+<div id="info" class="info"></div>
 
-<div class="source-line" id="sourceLine">Source: DATABASE | Updated: —</div>
-<div id="error" class="error"></div>
+<section class="filters">
+  <div class="control"><label>PROVINCE</label><select id="province"></select></div>
+  <div class="control"><label>FINAL STATUS</label><select id="status"></select></div>
+  <div class="control"><label>FINDINGS</label><select id="finding"></select></div>
+  <div class="control"><label>RFO</label><select id="rfo"></select></div>
+  <div class="control"><label>CONCERN</label><select id="concern"></select></div>
+  <div class="control"><label>SOURCE</label><select id="sourceSelect" disabled><option>DIRECT GOOGLE SHEETS</option></select></div>
+</section>
 
-<div class="section">ACTIVE / PENDING NAP MONITORING</div>
-<div class="kpis">
-  <div class="kpi pending"><div class="label">TOTAL PENDING</div><div id="pending" class="value">—</div><div class="note">FINAL STATUS = PENDING</div></div>
-  <div class="kpi new"><div class="label">NEW</div><div id="new" class="value">—</div><div class="note">0–1 DAY</div></div>
-  <div class="kpi"><div class="label">AGING</div><div id="aging" class="value">—</div><div class="note">2–3 DAYS</div></div>
-  <div class="kpi critical"><div class="label">CRITICAL</div><div id="critical" class="value">—</div><div class="note">4+ DAYS</div></div>
-</div>
+<div id="meta" class="meta" style="display:none">Waiting for a direct Google Sheets read…</div>
 
-<div class="cards">
-  <div class="card"><h3>PENDING BY MUNICIPALITY</h3><table class="table"><thead><tr><th>MUNICIPALITY</th><th>COUNT</th><th>%</th></tr></thead><tbody id="pendingMunicipality"></tbody></table></div>
-  <div class="card"><h3>PENDING BY ISSUE</h3><table class="table"><thead><tr><th>ISSUE</th><th>COUNT</th><th>%</th></tr></thead><tbody id="pendingIssue"></tbody></table></div>
-  <div class="card"><h3>TECHNICIAN WORKLOAD</h3><table class="table"><thead><tr><th>TECHNICIAN</th><th>ACTIVE</th><th>OLDEST DAYS</th></tr></thead><tbody id="techWorkload"></tbody></table></div>
-</div>
+<section class="kpis">
+  <article class="kpi pending"><div class="label">PENDING</div><div id="pending" class="value">—</div><div class="note">DATABASE FINAL STATUS</div></article>
+  <article class="kpi restored"><div class="label">RESTORED</div><div id="restored" class="value">—</div><div class="note">DATABASE FINAL STATUS (FILTERED)</div></article>
+  
+</section>
 
-<div class="section">RESTORATION MONITORING</div>
-<div class="kpis">
-  <div class="kpi restored"><div class="label">RESTORED</div><div id="restored" class="value">—</div><div class="note">FINAL STATUS = RESTORED</div></div>
-  <div class="kpi restored"><div class="label">AVG RESTORATION</div><div id="avg" class="value">—</div><div class="note">ENDORSED → RESTORED</div></div>
-  <div class="kpi restored"><div class="label">FASTEST</div><div id="fastest" class="value">—</div><div class="note">MINIMUM TURNAROUND</div></div>
-  <div class="kpi restored"><div class="label">SLOWEST</div><div id="slowest" class="value">—</div><div class="note">MAXIMUM TURNAROUND</div></div>
-</div>
+<section class="grid">
+  <article class="panel">
+    <div class="panel-head">
+      <div><h2>DATABASE FINAL STATUS</h2><div class="desc">Counts are taken directly from the DATABASE FINAL STATUS column.</div></div>
+    </div>
+    <div id="statusChart" class="chart"><div class="loading">Waiting for source…</div></div>
+    <div class="data-health">
+      <div class="health-card"><small>DATABASE ROWS</small><b id="dbRows">—</b></div>
+      <div class="health-card"><small>FORMULA ERRORS</small><b id="formulaErrors">—</b></div>
+      <div class="health-card"><small>LAST VERIFIED</small><b id="lastVerified">—</b></div>
+    </div>
+  </article>
 
-<div class="cards">
-  <div class="card"><h3>AGING MONITOR</h3><table class="table aging-monitor"><thead><tr><th>CATEGORY</th><th>COUNT</th><th>%</th></tr></thead><tbody id="agingSummary"></tbody></table></div>
-  <div class="card"><h3>RESTORED BY TECHNICIAN</h3><table class="table"><thead><tr><th>TECHNICIAN</th><th>RESTORED</th><th>%</th></tr></thead><tbody id="restoredTechnician"></tbody></table></div>
-  <div class="card"><h3>RESTORED BY MUNICIPALITY</h3><table class="table"><thead><tr><th>MUNICIPALITY</th><th>RESTORED</th><th>%</th></tr></thead><tbody id="restoredMunicipality"></tbody></table></div>
-</div>
+  <article class="panel">
+    <div class="panel-head">
+      <div><h2>NAP DOWN</h2><div class="desc">Direct rows from the NAP DOWN sheet; no database reconciliation or invented fields.</div></div>
+    </div>
+    <div class="nap-filters" aria-label="NAP DOWN area filters">
+      <div class="nap-filter"><label for="napProvince">PROVINCE</label><select id="napProvince"><option value="ALL">All provinces</option></select></div>
+      <div class="nap-filter"><label for="napMunicipality">MUNICIPALITY</label><select id="napMunicipality"><option value="ALL">All municipalities</option></select></div>
+      <div class="nap-filter"><label for="napBarangay">BARANGAY</label><select id="napBarangay"><option value="ALL">All barangays</option></select></div>
+      <button id="napClear" class="nap-clear" type="button">CLEAR FILTERS</button>
+    </div>
+    <div id="napFilterMeta" class="nap-filter-meta">All NAP DOWN areas</div>
+    <div class="nap-countbar">
+      <div class="count">NAP DOWN <b id="napCount">—</b></div>
+      <div class="sort-note">Count excludes blank Province and blank Findings • Sorted Province A–Z • Municipality A–Z • Ageing high → low</div>
+    </div>
+    <div class="nap-summary-wrap">
+      <table class="nap-summary">
+        <thead><tr><th>Province</th><th>Findings</th><th>Count</th></tr></thead>
+        <tbody id="napSummary"><tr><td colspan="3" class="empty">Waiting for source…</td></tr></tbody>
+      </table>
+    </div>
+    <div class="nap-table-wrap">
+      <table class="nap-table">
+        <thead><tr>
+          <th>Province</th><th>Municipality</th><th>Barangay</th><th>NAP Code</th><th>Coordinates</th><th>Date Endorsed</th><th>Duration</th><th>Findings</th>
+        </tr></thead>
+        <tbody id="napTable"><tr><td colspan="8" class="empty">Waiting for source…</td></tr></tbody>
+      </table>
+    </div>
+    <div class="note-line">Displayed fields are read from the NAP DOWN sheet exactly as returned by Google Sheets.</div>
+  </article>
+</section>
 
-<div class="details">
-  <div class="detail"><div class="detail-head">ACTIVE / PENDING NAP MONITORING</div><div class="detail-wrap"><table class="table"><thead><tr>
-    <th>MUNICIPALITY</th><th>NAP ASSIGNMENT</th><th>CONCERN / ISSUE</th><th>GROUP NAME</th><th>ASSIGNED TECHNICIAN</th><th>DATE ENDORSED</th><th>AGE DAYS</th><th>STATUS</th>
-  </tr></thead><tbody id="pendingTable"></tbody></table></div></div>
-
-  <div class="detail"><div class="detail-head">RESTORED NAP MONITORING</div><div class="detail-wrap"><table class="table"><thead><tr>
-    <th>MUNICIPALITY</th><th>NAP ASSIGNMENT</th><th>CONCERN / ISSUE</th><th>GROUP NAME</th><th>ASSIGNED TECHNICIAN</th><th>DATE ENDORSED</th><th>DATE RESTORED</th><th>TURNAROUND</th>
-  </tr></thead><tbody id="restoredTable"></tbody></table></div></div>
-</div>
-
-<div class="nap-panel">
-  <div class="nap-head">
-    <strong id="napTitle">NAP DOWN — —</strong>
-    <span>Count excludes blank Province and blank Findings • Sorted Province A–Z • Municipality A–Z • Ageing high → low</span>
-  </div>
-  <table class="nap-summary"><thead><tr><th>PROVINCE</th><th>FINDINGS</th><th>COUNT</th></tr></thead><tbody id="napSummary"></tbody></table>
-  <div class="nap-detail-wrap"><table class="nap-detail"><thead><tr>
-    <th>PROVINCE</th><th>MUNICIPALITY</th><th>BARANGAY</th><th>NAP CODE</th><th>COORDINATES</th><th>DATE ENDORSED</th><th>DURATION</th><th>FINDINGS</th>
-  </tr></thead><tbody id="napTable"></tbody></table></div>
-</div>
-
-<div class="footer"><span>Source: Google Sheets • DATABASE + NAP DOWN</span><span id="updated">Last update —</span></div>
+<footer><span id="foot">Source: Google Sheets API</span><span id="updated">Last update —</span></footer>
 </main>
 
 <script>
-const $=id=>document.getElementById(id);
-const S={snap:null,province:'ALL',date:'ALL',loading:false};
-const REFRESH_MS=30000;
+const $ = id => document.getElementById(id);
+const S = {snap:null,lastGood:null,filters:{month:'ALL',date:'ALL',province:'ALL',status:'ALL',finding:'ALL',rfo:'ALL',concern:'ALL'},napFilters:{province:'ALL',municipality:'ALL',barangay:'ALL'},loading:false};
+const REFRESH_MS = 30000;
 
 function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function clean(v){return String(v??'').replace(/\u00a0/g,' ').replace(/[\t\r\n]+/g,' ').replace(/\s+/g,' ').trim()}
 function norm(v){return clean(v).toUpperCase()}
 function fmt(v){return Number(v||0).toLocaleString()}
-function pct(a,b){return b?(a/b*100).toFixed(1)+'%':'0.0%'}
-function dateObj(v){if(!v)return null;const d=new Date(v);return Number.isNaN(d.getTime())?null:d}
-function manilaDay(v){
-  const d=dateObj(v); if(!d)return '';
-  const parts=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Manila',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d);
+function parseDate(v){const s=clean(v);if(!s)return null;const x=new Date(s);return Number.isNaN(x.getTime())?null:x}
+function dayKey(v){const x=parseDate(v);return x?[x.getFullYear(),String(x.getMonth()+1).padStart(2,'0'),String(x.getDate()).padStart(2,'0')].join('-'):''}
+function dateLabel(k){if(!k||k==='ALL')return'All dates';const [y,m,d]=k.split('-');return new Date(Number(y),Number(m)-1,Number(d)).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}
+function monthLabel(k){if(!k||k==='ALL')return'All months';const [y,m]=k.split('-');return new Date(Number(y),Number(m)-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'})}
+
+function setInfo(text){const e=$('info');e.textContent=text||'';e.style.display=text?'block':'none'}
+function setAlert(text){const e=$('alert');e.textContent=text||'';e.style.display=text?'block':'none'}
+function setBadge(state,text){
+  const e=$('syncBadge'); e.className='pill '+(state==='SYNCED'?'ok':state==='SOURCE_ERROR'||state==='AUTH_REQUIRED'?'bad':'info');
+  e.innerHTML='<i></i>SYNC AGENT • '+esc(text);
+}
+function setSelect(id,values){
+  const el=$(id), current=S.filters[id];
+  const vals=[...new Set((values||[]).filter(Boolean))];
+  el.innerHTML='<option value="ALL">All</option>'+vals.map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join('');
+  el.value=vals.includes(current)?current:'ALL';
+  S.filters[id]=el.value;
+}
+function syncDateSelects(){
+  const db=S.snap?.rows||[];
+  const dates=[...new Set(db.map(r=>dayKey(r.dateEndorsed)).filter(Boolean))].sort().reverse();
+  const months=[...new Set(dates.map(d=>d.slice(0,7)))];
+  const pm=S.filters.month,pd=S.filters.date;
+
+  $('month').innerHTML='<option value="ALL">All months</option>'+months.map(k=>'<option value="'+k+'">'+monthLabel(k)+'</option>').join('');
+  $('month').value=months.includes(pm)?pm:'ALL';
+  S.filters.month=$('month').value;
+
+  const allowed=S.filters.month==='ALL'?dates:dates.filter(d=>d.startsWith(S.filters.month));
+  $('date').innerHTML='<option value="ALL">All dates</option>'+allowed.map(k=>'<option value="'+k+'">'+dateLabel(k)+'</option>').join('');
+  $('date').value=allowed.includes(pd)?pd:'ALL';
+  S.filters.date=$('date').value;
+
+}
+function syncFilters(){
+  const o=S.snap?.options||{};
+  setSelect('province',o.province);setSelect('status',o.status);setSelect('finding',o.finding);setSelect('rfo',o.rfo);setSelect('concern',o.concern);syncDateSelects();
+}
+function matchDb(r){
+  if(S.filters.province!=='ALL'&&r.province!==S.filters.province)return false;
+  if(S.filters.status!=='ALL'&&norm(r.finalStatus)!==norm(S.filters.status))return false;
+  if(S.filters.finding!=='ALL'&&r.finding!==S.filters.finding)return false;
+  if(S.filters.rfo!=='ALL'&&r.rfo!==S.filters.rfo)return false;
+  if(S.filters.concern!=='ALL'&&r.concern!==S.filters.concern)return false;
+  if(S.filters.date!=='ALL'&&dayKey(r.dateEndorsed)!==S.filters.date)return false;
+  if(S.filters.month!=='ALL'&&!dayKey(r.dateEndorsed).startsWith(S.filters.month))return false;
+  return true;
+}
+function setNapSelect(id,values,label){
+  const el=$(id);
+  const key=id==='napProvince'?'province':id==='napMunicipality'?'municipality':'barangay';
+  const current=S.napFilters[key];
+  const vals=[...new Set((values||[]).filter(v=>clean(v)!==''))].sort((a,b)=>String(a).localeCompare(String(b)));
+  el.innerHTML='<option value="ALL">'+label+'</option>'+vals.map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join('');
+  el.value=vals.includes(current)?current:'ALL';
+}
+function syncNapFilters(){
+  const rows=S.snap?.napDownRows||[];
+  const provinceVals=rows.map(r=>r.province);
+  const municipalityVals=rows.filter(r=>S.napFilters.province==='ALL'||r.province===S.napFilters.province).map(r=>r.municipality);
+  const barangayVals=rows.filter(r=>
+    (S.napFilters.province==='ALL'||r.province===S.napFilters.province) &&
+    (S.napFilters.municipality==='ALL'||r.municipality===S.napFilters.municipality)
+  ).map(r=>r.barangay);
+
+  setNapSelect('napProvince',provinceVals,'All provinces');
+  S.napFilters.province=$('napProvince').value;
+  setNapSelect('napMunicipality',municipalityVals,'All municipalities');
+  S.napFilters.municipality=$('napMunicipality').value;
+  setNapSelect('napBarangay',barangayVals,'All barangays');
+  S.napFilters.barangay=$('napBarangay').value;
+}
+function matchNap(r){
+  if(S.napFilters.province!=='ALL'&&r.province!==S.napFilters.province)return false;
+  if(S.napFilters.municipality!=='ALL'&&r.municipality!==S.napFilters.municipality)return false;
+  if(S.napFilters.barangay!=='ALL'&&r.barangay!==S.napFilters.barangay)return false;
+  return true;
+}
+function chart(counts,total){
+  const entries=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  if(!total)return'<div class="empty">No rows match the current filters.</div>';
+  const palette=['#004e4a','#008d87','#1aa49d','#0b7480','#62aaa6','#6d8f95','#8c9fa2','#b07b2b','#b33a4a','#7a6aa6'];
+  let start=0;
+  const segments=[];
+  entries.forEach(([,v],i)=>{const end=start+(v/total)*100;segments.push(palette[i%palette.length]+' '+start+'% '+end+'%');start=end});
+  const legend=entries.map(([k,v],i)=>'<div class="legend-row"><span class="dot" style="background:'+palette[i%palette.length]+'"></span><span class="legend-name">'+esc(k)+'</span><span class="legend-value">'+fmt(v)+'<span class="legend-share">('+(v/total*100).toFixed(1)+'%)</span></span></div>').join('');
+  return'<div class="donut-wrap"><div class="donut" style="background:conic-gradient('+segments.join(',')+')"><div class="donut-center"><small>Total filtered</small><b>'+fmt(total)+'</b></div></div><div class="legend">'+legend+'</div></div>';
+}
+function durationHours(value){
+  const s=norm(value);
+  const dayMatch=s.match(/(\d+)\s*DAY/);
+  const hourMatch=s.match(/(\d+)\s*HOUR/);
+  const minMatch=s.match(/(\d+)\s*MIN/);
+  return (Number(dayMatch?.[1]||0)*24)+(Number(hourMatch?.[1]||0))+(Number(minMatch?.[1]||0)/60);
+}
+function manilaTodayKey(){
+  const parts=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Manila',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
   const p=Object.fromEntries(parts.filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));
   return p.year+'-'+p.month+'-'+p.day;
 }
-function dateLabel(k){if(!k||k==='ALL')return'All dates';const [y,m,d]=k.split('-');return new Date(Date.UTC(+y,+m-1,+d)).toLocaleDateString('en-US',{timeZone:'UTC',month:'short',day:'2-digit',year:'numeric'})}
-function durationDays(row){
-  const e=dateObj(row.dateEndorsed); if(!e)return null;
-  const r=dateObj(row.dateRestored); const end=r||new Date();
-  return Math.max(0,(end-e)/86400000);
-}
-function turnaroundHours(row){
-  const e=dateObj(row.dateEndorsed), r=dateObj(row.dateRestored); if(!e||!r)return null;
-  return Math.max(0,(r-e)/3600000);
-}
-function fmtTurn(h){if(h==null||!Number.isFinite(h))return'—';return h<24?h.toFixed(1)+' hrs':Math.floor(h/24)+'d '+(h%24).toFixed(1)+'h'}
-function uniqueSorted(v){return [...new Set(v.map(clean).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{sensitivity:'base'}))}
-function grouped(rows,getter){
-  const m=new Map();for(const r of rows){const k=clean(getter(r))||'UNSPECIFIED';m.set(k,(m.get(k)||0)+1)}
-  return [...m.entries()].map(([label,count])=>({label,count})).sort((a,b)=>b.count-a.count||a.label.localeCompare(b.label,undefined,{sensitivity:'base'}))
-}
-function selectedDbRows(){
-  return (S.snap?.rows||[]).filter(r=>{
-    if(S.province!=='ALL'&&norm(r.province)!==norm(S.province))return false;
-    if(S.date!=='ALL'&&manilaDay(r.dateEndorsed)!==S.date)return false;
-    return true;
-  });
-}
-function selectedRestoredRows(){
-  return (S.snap?.rows||[]).filter(r=>{
-    if(norm(r.finalStatus)!=='RESTORED')return false;
-    if(S.province!=='ALL'&&norm(r.province)!==norm(S.province))return false;
-    if(S.date!=='ALL'&&manilaDay(r.dateRestored)!==S.date)return false;
-    return true;
-  });
-}
-function renderTable(id,rows,cols){
-  $(id).innerHTML=rows.length?rows.join(''):'<tr><td colspan="'+cols+'" class="empty">No matching rows.</td></tr>';
+function dbContextMatch(r){
+  if(S.filters.province!=='ALL'&&r.province!==S.filters.province)return false;
+  if(S.filters.finding!=='ALL'&&r.finding!==S.filters.finding)return false;
+  if(S.filters.rfo!=='ALL'&&r.rfo!==S.filters.rfo)return false;
+  if(S.filters.concern!=='ALL'&&r.concern!==S.filters.concern)return false;
+  return true;
 }
 function render(){
-  const db=selectedDbRows();
-  const pending=db.filter(r=>norm(r.finalStatus)==='PENDING');
-  const restored=selectedRestoredRows();
+  syncFilters();
+  syncNapFilters();
+  const db=(S.snap?.rows||[]).filter(matchDb);
+  const napAll=(S.snap?.napDownRows||[]).filter(matchNap);
+  const nap=napAll.filter(r=>clean(r.province)!==''&&clean(r.finding)!=='');
+  const counts={};db.forEach(r=>{const s=clean(r.finalStatus)||'BLANK';counts[s]=(counts[s]||0)+1});
+  const total=db.length;
+  const pending=db.filter(r=>norm(r.finalStatus)==='PENDING').length;
+  const restored=db.filter(r=>norm(r.finalStatus)==='RESTORED').length;
 
-  const newCount=pending.filter(r=>{const d=durationDays(r);return d!=null&&d<=1}).length;
-  const agingCount=pending.filter(r=>{const d=durationDays(r);return d!=null&&d>1&&d<4}).length;
-  const criticalCount=pending.filter(r=>{const d=durationDays(r);return d!=null&&d>=4}).length;
+  $('pending').textContent=fmt(pending);
+  $('restored').textContent=fmt(restored);
 
-  $('pending').textContent=fmt(pending.length);
-  $('new').textContent=fmt(newCount);
-  $('aging').textContent=fmt(agingCount);
-  $('critical').textContent=fmt(criticalCount);
+  $('statusChart').innerHTML=chart(counts,total);
+  $('dbRows').textContent=fmt(S.snap?.diagnostics?.databaseRows);
+  $('formulaErrors').textContent=fmt(S.snap?.diagnostics?.formulaErrors);
+  $('lastVerified').textContent=S.snap?.checkedAt?new Date(S.snap.checkedAt).toLocaleTimeString():'—';
 
-  const pm=grouped(pending,r=>r.municipality);
-  const pi=grouped(pending,r=>r.finding||r.napStatus);
-  const tw=grouped(pending,r=>r.ospTeam).map(x=>{
-    const rows=pending.filter(r=>(clean(r.ospTeam)||'UNSPECIFIED')===x.label);
-    return {...x,oldest:Math.max(...rows.map(durationDays).filter(Number.isFinite),0)};
-  });
-  renderTable('pendingMunicipality',pm.map(x=>'<tr><td>'+esc(x.label)+'</td><td class="num">'+fmt(x.count)+'</td><td class="num">'+pct(x.count,pending.length)+'</td></tr>'),3);
-  renderTable('pendingIssue',pi.map(x=>'<tr><td>'+esc(x.label)+'</td><td class="num">'+fmt(x.count)+'</td><td class="num">'+pct(x.count,pending.length)+'</td></tr>'),3);
-  renderTable('techWorkload',tw.map(x=>'<tr><td>'+esc(x.label)+'</td><td class="num">'+fmt(x.count)+'</td><td class="num">'+x.oldest.toFixed(1)+'</td></tr>'),3);
 
-  $('agingSummary').innerHTML=[
-    ['NEW (0–1 DAY)',newCount,'green'],
-    ['AGING (2–3 DAYS)',agingCount,'amber'],
-    ['CRITICAL (4+ DAYS)',criticalCount,'red']
-  ].map(x=>'<tr><td><span class="dot '+x[2]+'"></span>'+x[0]+'</td><td class="num">'+fmt(x[1])+'</td><td class="num">'+pct(x[1],pending.length)+'</td></tr>').join('');
-
-  $('restored').textContent=fmt(restored.length);
-  const hours=restored.map(turnaroundHours).filter(Number.isFinite);
-  $('avg').textContent=hours.length?(hours.reduce((a,b)=>a+b,0)/hours.length).toFixed(1)+' hrs':'—';
-  $('fastest').textContent=hours.length?Math.min(...hours).toFixed(1)+' hrs':'—';
-  $('slowest').textContent=hours.length?fmtTurn(Math.max(...hours)):'—';
-
-  const rt=grouped(restored,r=>r.ospTeam);
-  const rm=grouped(restored,r=>r.municipality);
-  renderTable('restoredTechnician',rt.map(x=>'<tr><td>'+esc(x.label)+'</td><td class="num">'+fmt(x.count)+'</td><td class="num">'+pct(x.count,restored.length)+'</td></tr>'),3);
-  renderTable('restoredMunicipality',rm.map(x=>'<tr><td>'+esc(x.label)+'</td><td class="num">'+fmt(x.count)+'</td><td class="num">'+pct(x.count,restored.length)+'</td></tr>'),3);
-
-  const pendingRows=pending.slice().sort((a,b)=>(durationDays(b)||0)-(durationDays(a)||0)).map(r=>{
-    const age=durationDays(r), cls=age>=4?'status-critical':age>1?'status-age':'status-new';
-    return '<tr><td>'+esc(r.municipality||'—')+'</td><td>'+esc(r.facility||r.napStatus||'—')+'</td><td>'+esc(r.finding||r.napStatus||'—')+'</td><td>'+esc(r.concern||'—')+'</td><td>'+esc(r.ospTeam||'—')+'</td><td>'+esc(r.dateEndorsed?new Date(r.dateEndorsed).toLocaleString('en-PH',{timeZone:'Asia/Manila'}):'—')+'</td><td class="num">'+(age==null?'—':age.toFixed(1))+'</td><td><span class="status-badge '+cls+'">'+esc(r.finalStatus)+'</span></td></tr>';
-  });
-  renderTable('pendingTable',pendingRows,8);
-
-  const restoredRows=restored.slice().sort((a,b)=>String(b.dateRestored).localeCompare(String(a.dateRestored))).map(r=>{
-    return '<tr><td>'+esc(r.municipality||'—')+'</td><td>'+esc(r.facility||r.napStatus||'—')+'</td><td>'+esc(r.finding||r.napStatus||'—')+'</td><td>'+esc(r.concern||'—')+'</td><td>'+esc(r.ospTeam||'—')+'</td><td>'+esc(r.dateEndorsed?new Date(r.dateEndorsed).toLocaleString('en-PH',{timeZone:'Asia/Manila'}):'—')+'</td><td>'+esc(r.dateRestored?new Date(r.dateRestored).toLocaleString('en-PH',{timeZone:'Asia/Manila'}):'—')+'</td><td>'+esc(fmtTurn(turnaroundHours(r)))+'</td></tr>';
-  });
-  renderTable('restoredTable',restoredRows,8);
-
-  const nap=(S.snap?.napDownRows||[]).filter(r=>clean(r.province)!==''&&clean(r.finding)!=='');
-  const napSorted=nap.slice().sort((a,b)=>{
-    const p=clean(a.province).localeCompare(clean(b.province),undefined,{sensitivity:'base'});if(p)return p;
-    const m=clean(a.municipality).localeCompare(clean(b.municipality),undefined,{sensitivity:'base'});if(m)return m;
-    const aDur=durationHours(b.duration)-durationHours(a.duration);if(aDur)return aDur;
+  const rows=nap.slice().sort((a,b)=>{
+    const province=clean(a.province).localeCompare(clean(b.province),undefined,{sensitivity:'base'});
+    if(province!==0)return province;
+    const municipality=clean(a.municipality).localeCompare(clean(b.municipality),undefined,{sensitivity:'base'});
+    if(municipality!==0)return municipality;
+    const barangay=clean(a.barangay).localeCompare(clean(b.barangay),undefined,{sensitivity:'base'});
+    if(barangay!==0)return barangay;
+    const age=durationHours(b.duration)-durationHours(a.duration);
+    if(age!==0)return age;
     return clean(a.napCode).localeCompare(clean(b.napCode),undefined,{sensitivity:'base'});
   });
-  const ns=grouped(nap.map(r=>({v:clean(r.province),f:clean(r.finding)})),r=>r.v+' '+r.f).map(x=>{
-    const [province,finding]=x.label.split(' ');return {province,finding,count:x.count};
-  }).sort((a,b)=>a.province.localeCompare(b.province)||a.finding.localeCompare(b.finding));
-  $('napTitle').textContent='NAP DOWN '+fmt(nap.length);
-  $('napSummary').innerHTML=ns.length?ns.map(x=>'<tr><td>'+esc(x.province)+'</td><td>'+esc(x.finding)+'</td><td>'+fmt(x.count)+'</td></tr>').join(''):'<tr><td colspan="3" class="empty">No NAP DOWN rows.</td></tr>';
-  $('napTable').innerHTML=napSorted.length?napSorted.map(r=>'<tr><td>'+esc(r.province)+'</td><td>'+esc(r.municipality)+'</td><td>'+esc(r.barangay||'—')+'</td><td>'+esc(r.napCode)+'</td><td>'+esc(r.coordinates||'—')+'</td><td>'+esc(r.dateEndorsedDisplay||r.dateEndorsed||'—')+'</td><td>'+esc(r.duration||'—')+'</td><td>'+esc(r.finding||'—')+'</td></tr>').join(''):'<tr><td colspan="8" class="empty">No NAP DOWN rows.</td></tr>';
 
-  $('sourceLine').textContent='Source: DATABASE | Updated: '+(S.snap?.checkedAt?new Date(S.snap.checkedAt).toLocaleString('en-PH',{timeZone:'Asia/Manila'}):'—');
-  $('updated').textContent='Last update '+(S.snap?.checkedAt?new Date(S.snap.checkedAt).toLocaleString('en-PH',{timeZone:'Asia/Manila'}):'—');
+  const summary={};
+  nap.forEach(r=>{
+    const province=clean(r.province)||'UNKNOWN';
+    const finding=clean(r.finding)||'BLANK';
+    const key=province+'\u0000'+finding;
+    summary[key]=(summary[key]||0)+1;
+  });
+  const summaryRows=Object.entries(summary).map(([key,count])=>{
+    const [province,finding]=key.split('\u0000');
+    return {province,finding,count};
+  }).sort((a,b)=>{
+    const p=a.province.localeCompare(b.province,undefined,{sensitivity:'base'});
+    return p!==0?p:a.finding.localeCompare(b.finding,undefined,{sensitivity:'base'});
+  });
+
+  $('napCount').textContent=fmt(nap.length);
+  $('napSummary').innerHTML=summaryRows.length?summaryRows.map(r=>'<tr><td>'+esc(r.province)+'</td><td>'+esc(r.finding)+'</td><td>'+fmt(r.count)+'</td></tr>').join(''):'<tr><td colspan="3" class="empty">No NAP DOWN summary rows match the current filters.</td></tr>';
+
+  $('napTable').innerHTML=rows.length?rows.map(r=>{
+    const dt=r.dateEndorsedDisplay||r.dateEndorsed||'—';
+    return'<tr><td>'+esc(r.province||'—')+'</td><td>'+esc(r.municipality||'—')+'</td><td>'+esc(r.barangay||'—')+'</td><td>'+esc(r.napCode||'—')+'</td><td>'+esc(r.coordinates||'—')+'</td><td>'+esc(dt)+'</td><td class="duration">'+esc(r.duration||'—')+'</td><td class="finding">'+esc(r.finding||'—')+'</td></tr>'
+  }).join(''):'<tr><td colspan="8" class="empty">No NAP DOWN rows match the current filters.</td></tr>';
+
+  $('napFilterMeta').textContent = nap.length + ' NAP DOWN counted rows shown' +
+    (S.napFilters.province!=='ALL'?' • '+S.napFilters.province:'') +
+    (S.napFilters.municipality!=='ALL'?' • '+S.napFilters.municipality:'') +
+    (S.napFilters.barangay!=='ALL'?' • '+S.napFilters.barangay:'');
+
+  $('updated').textContent='Last update '+(S.snap?.checkedAt?new Date(S.snap.checkedAt).toLocaleString():'—');
+  $('foot').textContent='Source: Google Sheets API • Direct read • no published-feed fallback';
 }
-function durationHours(v){
-  const s=norm(v);const d=s.match(/(\d+)\s*DAY/),h=s.match(/(\d+)\s*HOUR/),m=s.match(/(\d+)\s*MIN/);
-  return Number(d?.[1]||0)*24+Number(h?.[1]||0)+Number(m?.[1]||0)/60;
+function showSnapshotError(j,requestError){
+  setBadge('SOURCE_ERROR','SOURCE ERROR');
+  const d=j?.diagnostics||{};
+  const parts=['DIRECT GOOGLE SHEETS READ FAILED',d.code||'SOURCE_ERROR',d.message||requestError||'Unknown source error'];
+  if(d.status)parts.push('HTTP '+d.status);
+  setAlert(parts.join(' • '));
+  const next=j?.nextAction||'Review the source error and retry.';
+  setInfo(next);
+  if(S.lastGood){S.snap=S.lastGood;render();$('meta').innerHTML='LAST VERIFIED SNAPSHOT • '+(S.lastGood.checkedAt?new Date(S.lastGood.checkedAt).toLocaleString():'—')+' • live source currently unavailable';}
+  $('updated').textContent='Source check failed '+new Date().toLocaleString();
 }
-function syncSelectors(){
-  const o=S.snap?.options||{};
-  const p=uniqueSorted(o.province||[]);
-  $('province').innerHTML='<option value="ALL">All provinces</option>'+p.map(x=>'<option>'+esc(x)+'</option>').join('');
-  $('province').value=p.includes(S.province)?S.province:'ALL';S.province=$('province').value;
-  const dates=uniqueSorted((S.snap?.rows||[]).map(r=>manilaDay(r.dateEndorsed)).filter(Boolean)).sort().reverse();
-  $('date').innerHTML='<option value="ALL">All dates</option>'+dates.map(x=>'<option value="'+x+'">'+dateLabel(x)+'</option>').join('');
-  $('date').value=dates.includes(S.date)?S.date:(dates[0]||'ALL');S.date=$('date').value;
-}
-function setSync(ok,msg){
-  const e=$('sync');e.innerHTML='<i></i>SYNC AGENT • '+(ok?'SYNCED':msg);e.style.background=ok?'#f3fcfa':'#fff0f2';e.style.color=ok?'#004e4a':'#9a1f2b';e.querySelector('i').style.background=ok?'#1db777':'#d13b4d';
-}
-async function load(){
-  if(S.loading)return;S.loading=true;
+async function fetchSnapshot(){
+  if(S.loading)return;
+  S.loading=true;
   try{
-    const r=await fetch('/api/snapshot?refresh=1&ts='+Date.now(),{cache:'no-store'});
-    const j=await r.json();
-    if(!r.ok||j.ok===false)throw new Error(j?.diagnostics?.message||('HTTP '+r.status));
-    S.snap=j;syncSelectors();setSync(true,'SYNCED');$('error').style.display='none';render();
+    const r=await fetch('/api/snapshot?ts='+Date.now(),{cache:'no-store'});
+    const j=await r.json().catch(()=>({ok:false,diagnostics:{code:'INVALID_RESPONSE',message:'Invalid JSON response from dashboard API.'}}));
+    if(!r.ok||j.ok===false){showSnapshotError(j,'HTTP '+r.status);return}
+    S.snap=j;S.lastGood=j;
+    if(j.syncState==='SYNCED'){
+      setAlert('');setInfo('');setBadge('SYNCED','SYNCED');
+    }else if(j.syncState==='DEGRADED'){
+      setBadge('DEGRADED','PUBLISHED FALLBACK');
+      setAlert('DIRECT GOOGLE SHEETS API IS DISABLED • dashboard is using the published Google Sheets feed. This is read-only and may lag the live spreadsheet by a few minutes.');
+      setInfo('Enable the Google Sheets API in the Google Cloud project shown by the direct-source error. The published feed will continue to keep the dashboard operational until direct access is restored.');
+    }else{
+      setAlert('Source returned an unrecognized sync state: '+String(j.syncState||'unknown'));
+    }
+    render();
   }catch(e){
-    setSync(false,'SOURCE ERROR');$('error').textContent='DIRECT GOOGLE SHEETS READ FAILED • '+e.message;$('error').style.display='block';
+    showSnapshotError(null,e.message);
   }finally{S.loading=false}
 }
-$('province').addEventListener('change',()=>{S.province=$('province').value;render()});
-$('date').addEventListener('change',()=>{S.date=$('date').value;render()});
-$('reset').addEventListener('click',()=>{S.province='ALL';S.date='ALL';syncSelectors();render()});
-setInterval(()=>{$('clock').textContent=new Date().toLocaleString('en-PH',{timeZone:'Asia/Manila'})},1000);
-$('clock').textContent=new Date().toLocaleString('en-PH',{timeZone:'Asia/Manila'});
-load();setInterval(load,REFRESH_MS);document.addEventListener('visibilitychange',()=>{if(!document.hidden)load()});
+function bind(){
+  ['province','status','finding','rfo','concern'].forEach(id=>$(id).addEventListener('change',()=>{S.filters[id]=$(id).value;render()}));
+  $('month').addEventListener('change',()=>{S.filters.month=$('month').value;S.filters.date='ALL';render()});
+  $('date').addEventListener('change',()=>{S.filters.date=$('date').value;render()});
+  $('napProvince').addEventListener('change',()=>{S.napFilters.province=$('napProvince').value;S.napFilters.municipality='ALL';S.napFilters.barangay='ALL';render()});
+  $('napMunicipality').addEventListener('change',()=>{S.napFilters.municipality=$('napMunicipality').value;S.napFilters.barangay='ALL';render()});
+  $('napBarangay').addEventListener('change',()=>{S.napFilters.barangay=$('napBarangay').value;render()});
+  $('napClear').addEventListener('click',()=>{S.napFilters={province:'ALL',municipality:'ALL',barangay:'ALL'};render()});
+}
+function tick(){ $('clock').textContent=new Date().toLocaleString() }
+bind();tick();setInterval(tick,1000);
+fetchSnapshot();setInterval(fetchSnapshot,REFRESH_MS);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)fetchSnapshot()});
 </script>
 </body>
 </html>
