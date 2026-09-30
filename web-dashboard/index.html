@@ -89,6 +89,21 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;co
 .summary-card .dot.green{background:#39b96b}.summary-card .dot.amber{background:#e8b63e}.summary-card .dot.red{background:#e55b65}
 @media(max-width:1150px){.summary-grid{grid-template-columns:1fr 1fr}.summary-grid .wide{grid-column:1/-1}}
 @media(max-width:720px){.summary-grid{grid-template-columns:1fr}.summary-grid .wide{grid-column:auto}}
+
+.restoration-metrics{display:grid;grid-template-columns:repeat(3,minmax(200px,1fr));gap:10px;margin-top:10px}
+.metric-card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;box-shadow:var(--shadow);text-align:center}
+.metric-card .label{font-size:8px;font-weight:800;letter-spacing:.6px;color:var(--muted)}
+.metric-card .value{font-size:25px;line-height:1.05;margin-top:7px;font-weight:850;color:var(--brand-deep)}
+.metric-card .note{font-size:8px;color:var(--muted);margin-top:5px}
+.summary-card h3{font-size:11px;padding:8px 9px}
+.summary-card th,.summary-card td{padding:6px 8px;font-size:9px}
+.summary-card th{font-size:8px}
+.nap-countbar .count{font-size:10px}.nap-countbar .count b{font-size:18px}
+.nap-summary th,.nap-summary td{padding:9px 9px;font-size:9.5px}
+.nap-summary th{font-size:8.5px}
+.nap-table th,.nap-table td{padding:10px 8px;font-size:9.5px}
+.nap-table th{font-size:8.5px}
+@media(max-width:900px){.restoration-metrics{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -126,7 +141,12 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;co
 <section class="kpis">
   <article class="kpi pending"><div class="label">PENDING</div><div id="pending" class="value">—</div><div class="note">DATABASE FINAL STATUS</div></article>
   <article class="kpi restored"><div class="label">RESTORED</div><div id="restored" class="value">—</div><div class="note">DATABASE FINAL STATUS (FILTERED)</div></article>
-  
+</section>
+
+<section class="restoration-metrics" aria-label="Restoration metrics">
+  <article class="metric-card"><div class="label">AVG RESTORATION</div><div id="avgRestoration" class="value">—</div><div class="note">DATE ENDORSED → DATE RESTORED</div></article>
+  <article class="metric-card"><div class="label">FASTEST</div><div id="fastestRestoration" class="value">—</div><div class="note">MINIMUM TURNAROUND</div></article>
+  <article class="metric-card"><div class="label">SLOWEST</div><div id="slowestRestoration" class="value">—</div><div class="note">MAXIMUM TURNAROUND</div></article>
 </section>
 
 <section class="grid">
@@ -337,6 +357,23 @@ function render(){
 
   $('pending').textContent=fmt(pending);
   $('restored').textContent=fmt(restored);
+
+  const restorationRows = db.filter(r=>norm(r.finalStatus)==='RESTORED');
+  const restorationHours = restorationRows.map(r=>{
+    const e=parseDate(r.dateEndorsed), d=parseDate(r.dateRestored);
+    return e&&d ? Math.max(0,(d.getTime()-e.getTime())/3600000) : null;
+  }).filter(Number.isFinite);
+  const avgRestoration = restorationHours.length ? restorationHours.reduce((a,b)=>a+b,0)/restorationHours.length : null;
+  const fastestRestoration = restorationHours.length ? Math.min(...restorationHours) : null;
+  const slowestRestoration = restorationHours.length ? Math.max(...restorationHours) : null;
+
+  const fmtTurnaround = h => {
+    if(h==null || !Number.isFinite(h)) return '—';
+    return h < 24 ? h.toFixed(1)+' hrs' : Math.floor(h/24)+'d '+(h%24).toFixed(1)+'h';
+  };
+  $('avgRestoration').textContent = avgRestoration==null ? '—' : avgRestoration.toFixed(1)+' hrs';
+  $('fastestRestoration').textContent = fmtTurnaround(fastestRestoration);
+  $('slowestRestoration').textContent = fmtTurnaround(slowestRestoration);
 
   $('statusChart').innerHTML=chart(counts,total);
 
