@@ -39,10 +39,13 @@ h1{font-size:22px;line-height:1.15;margin:0;font-weight:850;color:var(--brand-de
 .kpi.pending{border-top:3px solid var(--red)}.kpi.restored{border-top:3px solid var(--brand)}.kpi.nap{border-top:3px solid var(--blue)}
 .grid{display:block;margin-top:10px}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;box-shadow:var(--shadow);min-width:0}
-.status-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(300px,.85fr);gap:12px;align-items:stretch}
-.status-panel .chart{min-height:265px}
-.status-compare .chart{min-height:265px}
-@media(max-width:900px){.status-grid{grid-template-columns:1fr}}
+.status-grid.single-status{display:block}
+.status-panel .chart{min-height:240px}
+.status-compare .chart{min-height:240px}
+.nap-layout{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:12px;align-items:start}
+.nap-chart-panel{position:sticky;top:12px}
+.nap-chart-panel .chart{min-height:300px}
+@media(max-width:1100px){.nap-layout{grid-template-columns:1fr}.nap-chart-panel{position:static}}
 
 .panel-head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
 .panel h2{font-size:12px;margin:0;color:var(--brand-deep)}.panel .desc{font-size:9px;color:var(--muted);margin-top:3px}
@@ -73,7 +76,7 @@ h1{font-size:22px;line-height:1.15;margin:0;font-weight:850;color:var(--brand-de
 .nap-summary td:nth-child(1),.nap-summary th:nth-child(1){width:28%}
 .nap-summary td:nth-child(2),.nap-summary th:nth-child(2){width:54%}
 .nap-summary td:nth-child(3),.nap-summary th:nth-child(3){width:18%;text-align:left;padding-left:12px}
-.nap-summary-wrap{max-width:820px}
+.nap-summary-wrap{max-width:720px}
 
 .note-line{font-size:8px;color:var(--muted);margin-top:8px}
 .empty{padding:24px;text-align:center;color:#7c8996;font-size:9px}
@@ -183,7 +186,7 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;co
 </section>
 
 
-<section class="status-grid">
+<section class="status-grid single-status">
   <article class="panel status-panel">
     <div class="panel-head">
       <div><h2>DATABASE FINAL STATUS</h2><div class="desc">Counts are taken directly from the DATABASE FINAL STATUS column.</div></div>
@@ -195,18 +198,11 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;co
       <div class="health-card"><small>LAST VERIFIED</small><b id="lastVerified">—</b></div>
     </div>
   </article>
-
-  <article class="panel status-compare">
-    <div class="panel-head">
-      <div><h2>PENDING vs RESTORED TODAY</h2><div class="desc">Current PENDING vs RESTORED on the selected date</div></div>
-    </div>
-    <div id="pendingRestoredChart" class="chart"><div class="loading">Waiting for source…</div></div>
-  </article>
 </section>
 
 <section class="grid">
   <div class="nap-layout">
-    <article class="panel">
+    <article class="panel nap-main">
     <div class="panel-head">
       <div><h2>NAP DOWN</h2><div class="desc">Direct rows from the NAP DOWN sheet; no database reconciliation or invented fields.</div></div>
     </div>
@@ -237,7 +233,12 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;co
     </div>
     <div class="note-line">Displayed fields are read from the NAP DOWN sheet exactly as returned by Google Sheets.</div>
     </article>
-
+    <article class="panel status-compare nap-chart-panel">
+      <div class="panel-head">
+        <div><h2>PENDING vs RESTORED</h2><div class="desc">Pending share against restored records for the selected date</div></div>
+      </div>
+      <div id="pendingRestoredChart" class="chart"><div class="loading">Waiting for source…</div></div>
+    </article>
   </div>
 </section>
 
@@ -407,10 +408,10 @@ function dbContextMatch(r){
 
 function pendingRestoredChart(pending,restored,dayLabel){
   const total=pending+restored;
-  if(!total)return '<div class="empty">No pending/restored rows for the selected day.</div>';
+  if(!total)return '<div class="empty">No pending/restored rows for the selected date.</div>';
   const p=pending/total*100;
   const r=100-p;
-  return '<div class="donut-wrap"><div class="donut" style="background:conic-gradient(#b33a4a 0% '+p+'%, #008d87 '+p+'% 100%)"><div class="donut-center"><small>PENDING + RESTORED TODAY</small><b>'+fmt(total)+'</b></div></div><div class="legend">'+
+  return '<div class="donut-wrap"><div class="donut" style="background:conic-gradient(#b33a4a 0% '+p+'%, #008d87 '+p+'% 100%)"><div class="donut-center"><small>PENDING SHARE</small><b>'+p.toFixed(1)+'%</b></div></div><div class="legend">'+
     '<div class="legend-row"><span class="dot" style="background:#b33a4a"></span><span class="legend-name">PENDING</span><span class="legend-value">'+fmt(pending)+'<span class="legend-share">('+p.toFixed(1)+'%)</span></span></div>'+
     '<div class="legend-row"><span class="dot" style="background:#008d87"></span><span class="legend-name">RESTORED OF THE DAY</span><span class="legend-value">'+fmt(restored)+'<span class="legend-share">('+r.toFixed(1)+'%)</span></span></div>'+
     '<div class="legend-row"><span></span><span class="legend-name" style="color:var(--muted);font-size:8px">RESTORED DATE</span><span class="legend-value" style="font-size:8px;color:var(--muted)">'+esc(dayLabel)+'</span></div>'+
