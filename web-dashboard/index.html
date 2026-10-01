@@ -114,6 +114,33 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;co
 .nap-summary th:nth-child(3),.nap-summary td:nth-child(3){width:20%;text-align:right}
 @media(max-width:720px){.details-drawer{width:92vw}.nap-summary th,.nap-summary td{padding:8px 7px;font-size:9.5px}}
 
+
+.nap-status-panel .chart{min-height:225px}
+.nap-status-panel .donut{width:160px;height:160px;flex-basis:160px}
+.nap-status-panel .donut:after{inset:36px}
+.province-section{margin-top:18px}
+.province-section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
+.province-section-head h2{margin:0;font-size:12px;color:var(--brand-deep)}
+.province-section-head span{font-size:8px;color:var(--muted)}
+.province-grid{display:grid;grid-template-columns:1fr;gap:10px}
+.province-card{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:var(--shadow)}
+.province-card-head{width:100%;border:0;background:var(--brand-soft);color:var(--brand-deep);display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 11px;font-size:11px;font-weight:900;text-align:left;cursor:pointer}
+.province-card-head:hover{background:#e3f3f1}
+.province-card-head .left{display:flex;gap:8px;align-items:center}.province-card-head .count{font-size:9px;font-weight:800;color:var(--muted)}
+.province-card-head .chevron{font-size:13px}.province-card.collapsed .chevron{transform:rotate(-90deg)}
+.province-card.collapsed .province-card-body{display:none}
+.province-card-body{padding:10px;display:grid;gap:10px}
+.province-issue{border:1px solid var(--soft-line);border-radius:7px;overflow:hidden}
+.province-issue table,.province-detail table{width:100%;border-collapse:collapse;table-layout:fixed}
+.province-issue th,.province-issue td,.province-detail th,.province-detail td{padding:7px 8px;border-bottom:1px solid #edf0f4;font-size:9px;vertical-align:top}
+.province-issue th,.province-detail th{background:#fafcfc;color:var(--muted);font-size:8px;text-transform:uppercase;letter-spacing:.3px}
+.province-issue tr:last-child td,.province-detail tr:last-child td{border-bottom:0}
+.province-issue .num,.province-detail .num{text-align:right}
+.province-detail{border:1px solid var(--soft-line);border-radius:7px;overflow:auto;max-height:360px}
+.province-detail th{position:sticky;top:0;z-index:1}
+.province-detail td{white-space:normal;overflow-wrap:anywhere}
+.province-note{font-size:8px;color:var(--muted)}
+@media(max-width:900px){.province-detail{max-height:280px}}
 </style>
 </head>
 <body>
@@ -200,10 +227,23 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;co
     <div class="note-line">Displayed fields are read from the NAP DOWN sheet exactly as returned by Google Sheets.</div>
     </article>
 
-
+    <article class="panel nap-status-panel">
+      <div class="panel-head">
+        <div><h2>PENDING vs RESTORED</h2><div class="desc">DATABASE FINAL STATUS</div></div>
+      </div>
+      <div id="pendingRestoredChart" class="chart"><div class="loading">Waiting for source…</div></div>
+    </article>
   </div>
 </section>
 
+
+<section class="province-section">
+  <div class="province-section-head">
+    <h2>PENDING BY PROVINCE</h2>
+    <span>Each province is separated with its issue summary and live pending-record details.</span>
+  </div>
+  <div id="provinceGrid" class="province-grid"></div>
+</section>
 
 <button id="detailsTab" class="details-tab" type="button" aria-expanded="false" aria-controls="detailsDrawer">DETAILS</button>
 <aside id="detailsDrawer" class="details-drawer" aria-hidden="true">
@@ -359,6 +399,74 @@ function dbContextMatch(r){
   if(S.filters.concern!=='ALL'&&r.concern!==S.filters.concern)return false;
   return true;
 }
+
+function pendingRestoredChart(pending,restored){
+  const total=pending+restored;
+  if(!total)return '<div class="empty">No pending/restored rows.</div>';
+  const p=pending/total*100;
+  const r=100-p;
+  return '<div class="donut-wrap"><div class="donut" style="background:conic-gradient(#b33a4a 0% '+p+'%, #008d87 '+p+'% 100%)"><div class="donut-center"><small>Pending + Restored</small><b>'+fmt(total)+'</b></div></div><div class="legend">'+
+    '<div class="legend-row"><span class="dot" style="background:#b33a4a"></span><span class="legend-name">PENDING</span><span class="legend-value">'+fmt(pending)+'<span class="legend-share">('+p.toFixed(1)+'%)</span></span></div>'+
+    '<div class="legend-row"><span class="dot" style="background:#008d87"></span><span class="legend-name">RESTORED</span><span class="legend-value">'+fmt(restored)+'<span class="legend-share">('+r.toFixed(1)+'%)</span></span></div>'+
+  '</div></div>';
+}
+function renderProvinceTables(pendingRows){
+  const groups={};
+  pendingRows.forEach(r=>{
+    const province=clean(r.province)||'UNSPECIFIED';
+    (groups[province] ||= []).push(r);
+  });
+  const provinces=Object.entries(groups).sort((a,b)=>a[0].localeCompare(b[0],undefined,{sensitivity:'base'}));
+  $('provinceGrid').innerHTML=provinces.length ? provinces.map(([province,rows],idx)=>{
+    const issues={};
+    rows.forEach(r=>{
+      const issue=clean(r.napStatus)||clean(r.concern)||clean(r.rfo)||'UNSPECIFIED';
+      issues[issue]=(issues[issue]||0)+1;
+    });
+    const issueRows=Object.entries(issues).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],undefined,{sensitivity:'base'}));
+    const detailRows=rows.slice().sort((a,b)=>{
+      const da=parseDate(a.dateEndorsed)?.getTime()||0, dbv=parseDate(b.dateEndorsed)?.getTime()||0;
+      return da-dbv;
+    }).map(r=>{
+      const age=(()=>{const e=parseDate(r.dateEndorsed);if(!e)return null;return Math.max(0,(Date.now()-e.getTime())/86400000)})();
+      return '<tr>'+
+        '<td>'+esc(r.municipality||'—')+'</td>'+
+        '<td>'+esc(r.barangay||'—')+'</td>'+
+        '<td>'+esc(r.napStatus||r.concern||'—')+'</td>'+
+        '<td>'+esc(r.ospTeam||'—')+'</td>'+
+        '<td>'+esc(r.dateEndorsed?new Date(r.dateEndorsed).toLocaleString('en-PH',{timeZone:'Asia/Manila'}):'—')+'</td>'+
+        '<td class="num">'+(age==null?'—':age.toFixed(1))+'</td>'+
+        '<td>'+esc(r.etr||'—')+'</td>'+
+        '<td>'+esc(r.rfo||'—')+'</td>'+
+      '</tr>';
+    });
+    return '<section class="province-card" data-province-card>'+
+      '<button class="province-card-head" type="button" aria-expanded="'+(idx===0?'true':'false')+'">'+
+        '<span class="left"><span>'+esc(province)+'</span><span class="count">'+fmt(rows.length)+' PENDING</span></span><span class="chevron">'+(idx===0?'⌃':'⌄')+'</span>'+
+      '</button>'+
+      '<div class="province-card-body" style="'+(idx===0?'':'display:none')+'">'+
+        '<div class="province-issue"><table><thead><tr><th>ISSUE</th><th class="num">COUNT</th><th class="num">%</th></tr></thead><tbody>'+
+          issueRows.map(([issue,count])=>'<tr><td>'+esc(issue)+'</td><td class="num">'+fmt(count)+'</td><td class="num">'+(rows.length?(count/rows.length*100).toFixed(1):'0.0')+'%</td></tr>').join('')+
+        '</tbody></table></div>'+
+        '<div class="province-detail"><table><thead><tr><th>MUNICIPALITY</th><th>BARANGAY</th><th>NAP / ISSUE</th><th>TECHNICIAN</th><th>DATE ENDORSED</th><th class="num">AGE DAYS</th><th>ETR</th><th>RFO</th></tr></thead><tbody>'+
+          detailRows.join('')+
+        '</tbody></table></div>'+
+        '<div class="province-note">Live records filtered by FINAL STATUS = PENDING and the current dashboard filters.</div>'+
+      '</div>'+
+    '</section>';
+  }).join(''):'<div class="empty">No pending province records match the current filters.</div>';
+
+  document.querySelectorAll('[data-province-card] .province-card-head').forEach(head=>{
+    head.onclick=()=>{
+      const card=head.closest('[data-province-card]');
+      const body=card.querySelector('.province-card-body');
+      const open=body.style.display!=='none';
+      body.style.display=open?'none':'grid';
+      head.setAttribute('aria-expanded',String(!open));
+      head.querySelector('.chevron').textContent=open?'⌄':'⌃';
+    };
+  });
+}
 function render(){
   syncFilters();
   syncNapFilters();
@@ -374,6 +482,8 @@ function render(){
   $('restored').textContent=fmt(restored);
 
   $('statusChart').innerHTML=chart(counts,total);
+  $('pendingRestoredChart').innerHTML=pendingRestoredChart(pending,restored);
+  renderProvinceTables(db.filter(r=>norm(r.finalStatus)==='PENDING'));
 
   const ageDays = r => {
     const e = parseDate(r.dateEndorsed);
