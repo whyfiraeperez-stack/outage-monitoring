@@ -198,7 +198,7 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;co
 
   <article class="panel status-compare">
     <div class="panel-head">
-      <div><h2>PENDING vs RESTORED</h2><div class="desc">PENDING as of today vs total RESTORED through today</div></div>
+      <div><h2>PENDING vs RESTORED TODAY</h2><div class="desc">Current PENDING vs RESTORED on the selected date</div></div>
     </div>
     <div id="pendingRestoredChart" class="chart"><div class="loading">Waiting for source…</div></div>
   </article>
@@ -405,15 +405,15 @@ function dbContextMatch(r){
   return true;
 }
 
-function pendingRestoredChart(pending,restored,todayLabel){
+function pendingRestoredChart(pending,restored,dayLabel){
   const total=pending+restored;
-  if(!total)return '<div class="empty">No pending/restored rows as of today.</div>';
+  if(!total)return '<div class="empty">No pending/restored rows for the selected day.</div>';
   const p=pending/total*100;
   const r=100-p;
-  return '<div class="donut-wrap"><div class="donut" style="background:conic-gradient(#b33a4a 0% '+p+'%, #008d87 '+p+'% 100%)"><div class="donut-center"><small>AS OF TODAY</small><b>'+fmt(total)+'</b></div></div><div class="legend">'+
-    '<div class="legend-row"><span class="dot" style="background:#b33a4a"></span><span class="legend-name">PENDING AS OF TODAY</span><span class="legend-value">'+fmt(pending)+'<span class="legend-share">('+p.toFixed(1)+'%)</span></span></div>'+
-    '<div class="legend-row"><span class="dot" style="background:#008d87"></span><span class="legend-name">TOTAL RESTORED THROUGH TODAY</span><span class="legend-value">'+fmt(restored)+'<span class="legend-share">('+r.toFixed(1)+'%)</span></span></div>'+
-    '<div class="legend-row"><span></span><span class="legend-name" style="color:var(--muted);font-size:8px">DATE</span><span class="legend-value" style="font-size:8px;color:var(--muted)">'+esc(todayLabel)+'</span></div>'+
+  return '<div class="donut-wrap"><div class="donut" style="background:conic-gradient(#b33a4a 0% '+p+'%, #008d87 '+p+'% 100%)"><div class="donut-center"><small>PENDING + RESTORED TODAY</small><b>'+fmt(total)+'</b></div></div><div class="legend">'+
+    '<div class="legend-row"><span class="dot" style="background:#b33a4a"></span><span class="legend-name">PENDING</span><span class="legend-value">'+fmt(pending)+'<span class="legend-share">('+p.toFixed(1)+'%)</span></span></div>'+
+    '<div class="legend-row"><span class="dot" style="background:#008d87"></span><span class="legend-name">RESTORED OF THE DAY</span><span class="legend-value">'+fmt(restored)+'<span class="legend-share">('+r.toFixed(1)+'%)</span></span></div>'+
+    '<div class="legend-row"><span></span><span class="legend-name" style="color:var(--muted);font-size:8px">RESTORED DATE</span><span class="legend-value" style="font-size:8px;color:var(--muted)">'+esc(dayLabel)+'</span></div>'+
   '</div></div>';
 }
 function renderProvinceTables(pendingRows){
@@ -489,19 +489,18 @@ function render(){
 
   $('statusChart').innerHTML=chart(counts,total);
 
-  const todayKey=manilaTodayKey();
-  const todayLabel=dateLabel(todayKey);
-  const pendingAsOfToday=(S.snap?.rows||[]).filter(r=>{
-    if(norm(r.finalStatus)!=='PENDING')return false;
-    const endorsedKey=dayKey(r.dateEndorsed);
-    return !endorsedKey || endorsedKey<=todayKey;
-  }).length;
-  const restoredThroughToday=(S.snap?.rows||[]).filter(r=>{
+  const selectedRestoredDay=S.filters.date!=='ALL'?S.filters.date:manilaTodayKey();
+  const selectedRestoredLabel=dateLabel(selectedRestoredDay);
+  const pendingForChart=db.filter(r=>norm(r.finalStatus)==='PENDING').length;
+  const restoredOfDay=(S.snap?.rows||[]).filter(r=>{
     if(norm(r.finalStatus)!=='RESTORED')return false;
-    const restoredKey=dayKey(r.dateRestored);
-    return !!restoredKey && restoredKey<=todayKey;
+    if(S.filters.province!=='ALL'&&r.province!==S.filters.province)return false;
+    if(S.filters.finding!=='ALL'&&r.finding!==S.filters.finding)return false;
+    if(S.filters.rfo!=='ALL'&&r.rfo!==S.filters.rfo)return false;
+    if(S.filters.concern!=='ALL'&&r.concern!==S.filters.concern)return false;
+    return dayKey(r.dateRestored)===selectedRestoredDay;
   }).length;
-  $('pendingRestoredChart').innerHTML=pendingRestoredChart(pendingAsOfToday,restoredThroughToday,todayLabel);
+  $('pendingRestoredChart').innerHTML=pendingRestoredChart(pendingForChart,restoredOfDay,selectedRestoredLabel);
   renderProvinceTables(db.filter(r=>norm(r.finalStatus)==='PENDING'));
 
   const ageDays = r => {
