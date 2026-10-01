@@ -39,9 +39,9 @@ h1{font-size:22px;line-height:1.15;margin:0;font-weight:850;color:var(--brand-de
 .kpi.pending{border-top:3px solid var(--red)}.kpi.restored{border-top:3px solid var(--brand)}.kpi.nap{border-top:3px solid var(--blue)}
 .grid{display:block;margin-top:10px}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;box-shadow:var(--shadow);min-width:0}
-.status-grid.single-status{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-.status-panel .chart{min-height:240px}
-.status-compare .chart{min-height:240px}
+.status-grid.single-status{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:18px;margin-top:10px}
+.status-panel .chart{min-height:300px}
+.status-compare .chart{min-height:300px}
 .nap-layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:12px;align-items:start}
 .nap-chart-panel{position:sticky;top:12px}
 .nap-chart-panel .chart{min-height:300px}
@@ -128,7 +128,7 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;co
 .drawer-card .dot.green{background:#39b96b}.drawer-card .dot.amber{background:#e8b63e}.drawer-card .dot.red{background:#e55b65}
 @media(max-width:720px){.drawer-card-body{max-height:220px}}
 
-.nap-summary-wrap{width:min(1060px,100%)}
+.nap-summary-wrap{width:min(72%,1060px)}
 .nap-summary th,.nap-summary td{padding:10px 10px;font-size:11px}
 .nap-summary th{font-size:9.5px}
 .nap-summary th:nth-child(1),.nap-summary td:nth-child(1){width:29%}
@@ -228,6 +228,12 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;co
       <div class="health-card"><small>LAST VERIFIED</small><b id="lastVerified">—</b></div>
     </div>
   </article>
+  <article class="panel status-compare">
+    <div class="panel-head">
+      <div><h2>PENDING vs RESTORED</h2><div class="desc">Current DATABASE FINAL STATUS comparison.</div></div>
+    </div>
+    <div id="pendingRestoredChart" class="chart"><div class="loading">Waiting for source…</div></div>
+  </article>
 </section>
 
 <section class="grid">
@@ -262,12 +268,6 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;co
       </table>
     </div>
     <div class="note-line">Displayed fields are read from the NAP DOWN sheet exactly as returned by Google Sheets.</div>
-    </article>
-    <article class="panel nap-chart-panel status-compare">
-      <div class="panel-head">
-        <div><h2>PENDING vs RESTORED</h2><div class="desc">Current DATABASE FINAL STATUS comparison.</div></div>
-      </div>
-      <div id="pendingRestoredChart" class="chart"><div class="loading">Waiting for source…</div></div>
     </article>
   </div>
 </section>
