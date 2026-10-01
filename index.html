@@ -42,7 +42,7 @@ h1{font-size:22px;line-height:1.15;margin:0;font-weight:850;color:var(--brand-de
 .status-grid.single-status{display:grid;grid-template-columns:1fr 1fr;gap:18px}
 .status-panel .chart{min-height:240px}
 .status-compare .chart{min-height:240px}
-.nap-layout{display:grid;grid-template-columns:1fr;gap:12px;align-items:start}
+.nap-layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:12px;align-items:start}
 .nap-chart-panel{position:sticky;top:12px}
 .nap-chart-panel .chart{min-height:300px}
 @media(max-width:1100px){.status-grid.single-status{grid-template-columns:1fr}.nap-layout{grid-template-columns:1fr}.nap-chart-panel{position:static}}
@@ -71,8 +71,8 @@ h1{font-size:22px;line-height:1.15;margin:0;font-weight:850;color:var(--brand-de
 .nap-countbar{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:10px;padding:8px 10px;background:var(--brand-soft);border:1px solid var(--brand-line);border-radius:8px}
 .nap-countbar .count{font-size:9px;font-weight:850;letter-spacing:.4px;color:var(--brand-deep)}.nap-countbar .count b{font-size:16px;margin-left:4px}.nap-countbar .sort-note{font-size:8px;color:var(--muted);text-align:right}
 .nap-summary-wrap{margin-top:8px;border:1px solid var(--line);border-radius:8px;overflow:hidden;max-width:900px}
-.nap-summary{width:100%;border-collapse:collapse;table-layout:fixed}.nap-summary th,.nap-summary td{padding:7px 8px;border-bottom:1px solid #edf0f4;font-size:8.5px;text-align:left}
-.nap-summary th{background:var(--brand-soft);color:var(--brand-deep);font-size:8px;text-transform:uppercase;letter-spacing:.45px}
+.nap-summary{width:100%;border-collapse:collapse;table-layout:fixed}.nap-summary th,.nap-summary td{padding:9px 10px;border-bottom:1px solid #edf0f4;font-size:9.5px;text-align:left}
+.nap-summary th{background:var(--brand-soft);color:var(--brand-deep);font-size:9px;text-transform:uppercase;letter-spacing:.45px}
 .nap-summary td:nth-child(1),.nap-summary th:nth-child(1){width:28%}
 .nap-summary td:nth-child(2),.nap-summary th:nth-child(2){width:54%}
 .nap-summary td:nth-child(3),.nap-summary th:nth-child(3){width:18%;text-align:left;padding-left:12px}
@@ -85,7 +85,23 @@ h1{font-size:22px;line-height:1.15;margin:0;font-weight:850;color:var(--brand-de
 footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;color:#7c8996;font-size:8px}
 .loading{padding:30px;text-align:center;color:var(--muted);font-size:10px}
 @media(max-width:1150px){.grid{grid-template-columns:1fr}.data-health{grid-template-columns:repeat(2,1fr)}.filters{grid-template-columns:repeat(3,1fr)}}
-@media(max-width:720px){body{padding:9px}.top{display:block}.top-right{justify-content:flex-start;margin-top:10px}.filters{grid-template-columns:1fr}.kpis{grid-template-columns:1fr}.data-health{grid-template-columns:1fr}.nap-filters{grid-template-columns:1fr 1fr}.nap-clear{width:100%}.nap-countbar{display:block}.nap-countbar .sort-note{margin-top:4px;text-align:left}.nap-table th,.nap-table td{padding:7px 5px;font-size:7.5px}.donut-wrap{flex-direction:column}.legend{width:100%}}
+@media(max-width:720px){
+    body{padding:8px;font-size:15px}
+    .top{display:block}.top-right{justify-content:flex-start;margin-top:10px}
+    .brand{gap:10px}.brand-logo{width:92px;height:30px}.brand h1{font-size:20px;line-height:1.1}
+    .filters{grid-template-columns:1fr;gap:10px}.control label{font-size:10px}.control select{height:40px;min-width:0;font-size:13px}
+    .kpis{grid-template-columns:1fr;gap:8px}.kpi{padding:14px}.kpi .label{font-size:11px}.kpi .value{font-size:30px}.kpi .note{font-size:9.5px}
+    .data-health{grid-template-columns:1fr}
+    .nap-filters{grid-template-columns:1fr}.nap-clear{width:100%;height:38px;font-size:12px}
+    .nap-countbar{display:block}.nap-countbar .count{font-size:12px}.nap-countbar .count b{font-size:20px}.nap-countbar .sort-note{margin-top:5px;text-align:left;font-size:10px}
+    .nap-summary-wrap{width:100%}.nap-summary th,.nap-summary td{padding:10px 8px;font-size:11px}.nap-summary th{font-size:9.5px}
+    .nap-table-wrap{overflow:auto}.nap-table{min-width:920px}.nap-table th,.nap-table td{padding:9px 7px;font-size:10px}.nap-table th{font-size:9px}
+    .panel{padding:12px}.panel h2{font-size:15px}.panel .desc{font-size:10px}.chart{min-height:220px}
+    .donut{width:180px;height:180px;flex-basis:180px}.donut-center b{font-size:24px}.legend{min-width:0;width:100%}.legend-row{font-size:11px}
+    .details-drawer{width:94vw}.details-drawer-head{padding:15px 14px}.details-drawer-head strong{font-size:13px}
+    .drawer-card-head{font-size:12px;padding:10px}.drawer-card th{font-size:9px}.drawer-card td{font-size:11px;padding:9px}
+    .details-tab{font-size:11px;padding:15px 8px}
+  }
 
 .details-tab{position:fixed;left:0;top:46%;z-index:50;transform:translateY(-50%);border:1px solid var(--brand-line);border-left:0;border-radius:0 8px 8px 0;background:var(--brand);color:#fff;padding:13px 8px;writing-mode:vertical-rl;text-orientation:mixed;font-size:10px;font-weight:900;letter-spacing:.8px;cursor:pointer;box-shadow:0 4px 14px rgba(0,77,73,.16)}
 .details-tab:hover{background:var(--brand-dark)}
@@ -212,12 +228,6 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;co
       <div class="health-card"><small>LAST VERIFIED</small><b id="lastVerified">—</b></div>
     </div>
   </article>
-  <article class="panel status-compare">
-    <div class="panel-head">
-      <div><h2>PENDING vs RESTORED</h2><div class="desc">PENDING vs RESTORED from DATABASE FINAL STATUS under the current filters.</div></div>
-    </div>
-    <div id="pendingRestoredChart" class="chart"><div class="loading">Waiting for source…</div></div>
-  </article>
 </section>
 
 <section class="grid">
@@ -252,6 +262,12 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;co
       </table>
     </div>
     <div class="note-line">Displayed fields are read from the NAP DOWN sheet exactly as returned by Google Sheets.</div>
+    </article>
+    <article class="panel nap-chart-panel status-compare">
+      <div class="panel-head">
+        <div><h2>PENDING vs RESTORED</h2><div class="desc">Current DATABASE FINAL STATUS comparison.</div></div>
+      </div>
+      <div id="pendingRestoredChart" class="chart"><div class="loading">Waiting for source…</div></div>
     </article>
   </div>
 </section>
