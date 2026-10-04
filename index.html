@@ -778,7 +778,7 @@ async function fetchSnapshot(){
   if(S.loading)return;
   S.loading=true;
   try{
-    const r=await fetch('/api/snapshot?refresh=1&ts='+Date.now(),{cache:'no-store'});
+    const r=await fetch('/api/snapshot-v2?refresh=1&ts='+Date.now(),{cache:'no-store'});
     const j=await r.json().catch(()=>({ok:false,diagnostics:{code:'INVALID_RESPONSE',message:'Invalid JSON response from dashboard API.'}}));
     if(!r.ok||j.ok===false){showSnapshotError(j,'HTTP '+r.status);return}
     S.snap=j;S.lastGood=j;
