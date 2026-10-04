@@ -705,7 +705,7 @@ function render(){
     (S.napFilters.barangay!=='ALL'?' • '+S.napFilters.barangay:'');
 
   $('updated').textContent='Last update '+(S.snap?.checkedAt?new Date(S.snap.checkedAt).toLocaleString():'—');
-  $('foot').textContent='Source: Google Sheets API • Direct read • no published-feed fallback';
+  $('foot').textContent='Source: '+(S.snap?.source||'Google Sheets')+' • '+(S.snap?.syncState==='SYNCED'?'Direct live read':'Recovery feed')+' • Live agent auto-retry enabled';
 }
 function showSnapshotError(j,requestError){
   const strip=$('agentStrip'); if(strip){strip.classList.remove('live','recovering');strip.classList.add('error');$('agentText').textContent=(j?.diagnostics?.message||requestError||'source error');$('agentMeta').textContent='AUTO-RECOVERY RETRYING';}
