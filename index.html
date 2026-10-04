@@ -571,6 +571,12 @@ function render(){
 
   $('totalRecords').textContent=fmt(total);
   $('pending').textContent=fmt(pending);
+  const pendingAlert=$('pendingAlert');
+  const pendingAlertCount=$('pendingAlertCount');
+  const pendingAlertSub=$('pendingAlertSub');
+  if(pendingAlertCount) pendingAlertCount.innerHTML=fmt(pending)+'<small>PENDING</small>';
+  if(pendingAlertSub) pendingAlertSub.textContent=pending ? (fmt(pending)+' record'+(pending===1?'':'s')+' currently marked PENDING in FINAL STATUS • '+(total?((pending/total)*100).toFixed(1):'0.0')+'% of filtered DATABASE rows.') : 'No records are currently marked PENDING in FINAL STATUS for the selected filters.';
+  if(pendingAlert) pendingAlert.style.opacity=pending?'1':'.78';
   $('restored').textContent=fmt(restored);
   $('pendingRate').textContent=total?((pending/total)*100).toFixed(1)+'%':'0.0%';
 
