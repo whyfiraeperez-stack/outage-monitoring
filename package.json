@@ -1,12 +1,12 @@
 {
   "name": "nap-noc-static-vercel",
   "private": true,
-  "version": "4.0.1",
+  "version": "4.0.2",
   "engines": {
     "node": "22.x"
   },
   "scripts": {
-    "build": "node -e \"console.log('NAP NOC dashboard build ready')\"",
+    "build": "node -e \"const fs=require('fs');const p='index.html';let s=fs.readFileSync(p,'utf8');s=s.replace(/\\n<!-- VERCEL_BUILD:[^>]*-->/g,'');s += '\\n<!-- VERCEL_BUILD:'+((process.env.VERCEL_GIT_COMMIT_SHA)||Date.now())+' -->\\n';fs.writeFileSync(p,s);console.log('Forced fresh static index build')\"",
     "start": "node -e \"console.log('Static Vercel deployment')\""
   },
   "dependencies": {
