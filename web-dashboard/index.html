@@ -797,7 +797,7 @@ function bind(){
     S.filters={month:'ALL',date:'ALL',province:'ALL',status:'ALL',finding:'ALL',rfo:'ALL',concern:'ALL'};
     render();
   });
-  $('pendingAlertBtn').addEventListener('click',()=>{ const el=$('provinceGrid'); if(el){el.scrollIntoView({behavior:'smooth',block:'start'});} });
+  const pendingAlertBtn=$('pendingAlertBtn'); if(pendingAlertBtn) pendingAlertBtn.addEventListener('click',()=>{ const el=$('provinceGrid'); if(el){el.scrollIntoView({behavior:'smooth',block:'start'});} });
   $('refreshBtn').addEventListener('click',async()=>{
     const b=$('refreshBtn');b.disabled=true;b.textContent='SYNCING…';
     try{await fetchSnapshot()}finally{b.disabled=false;b.textContent='REFRESH'}
