@@ -82,6 +82,19 @@ h1{font-size:22px;line-height:1.15;margin:0;font-weight:850;color:var(--brand-de
 .empty{padding:24px;text-align:center;color:#7c8996;font-size:9px}
 .data-health{display:none}.health-card{transition:border-color .15s ease,box-shadow .15s ease}.health-card:hover{border-color:var(--brand-line);box-shadow:0 2px 8px rgba(0,77,73,.05)}
 .health-card{background:var(--surface-2);border:1px solid #e8edf2;border-radius:8px;padding:9px}.health-card small{display:block;color:var(--muted);font-size:8px}.health-card b{font-size:13px;margin-top:3px;display:block}
+.status-table-wrap{margin-top:10px;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.status-table{width:100%;border-collapse:collapse;table-layout:fixed}
+.status-table th,.status-table td{padding:9px 10px;border-bottom:1px solid #edf0f4;font-size:9px;text-align:left}
+.status-table th{background:var(--brand-soft);color:var(--brand-deep);font-size:8px;text-transform:uppercase;letter-spacing:.45px}
+.status-table th:nth-child(2),.status-table td:nth-child(2){width:25%;text-align:right}
+.status-table th:nth-child(3),.status-table td:nth-child(3){width:25%;text-align:right}
+.status-table tr:last-child td{border-bottom:0}
+.status-table tr.pending-row td{background:#fff1f3;color:#8f2b3a;font-weight:900}
+.status-table tr.pending-row td:first-child{border-left:4px solid #b33a4a}
+.status-table .status-badge{display:inline-flex;align-items:center;gap:6px}
+.status-table .status-badge .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.status-table .pending-note{font-size:8px;color:#b33a4a;font-weight:800;margin-left:5px}
+@media(max-width:720px){.status-table th,.status-table td{padding:9px 8px;font-size:10px}.status-table th{font-size:8.5px}}
 footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;color:#7c8996;font-size:8px}
 .loading{padding:30px;text-align:center;color:var(--muted);font-size:10px}
 @media(max-width:1150px){.grid{grid-template-columns:1fr}.data-health{grid-template-columns:repeat(2,1fr)}.filters{grid-template-columns:repeat(3,1fr)}}
@@ -222,6 +235,12 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;co
       <div><h2>DATABASE FINAL STATUS</h2><div class="desc">Counts are taken directly from the DATABASE FINAL STATUS column.</div></div>
     </div>
     <div id="statusChart" class="chart"><div class="loading">Waiting for source…</div></div>
+    <div class="status-table-wrap">
+      <table class="status-table" aria-label="Database final status counts">
+        <thead><tr><th>FINAL STATUS</th><th>COUNT</th><th>SHARE</th></tr></thead>
+        <tbody id="statusTable"><tr><td colspan="3" class="empty">Waiting for source…</td></tr></tbody>
+      </table>
+    </div>
     <div class="data-health">
       <div class="health-card"><small>DATABASE ROWS</small><b id="dbRows">—</b></div>
       <div class="health-card"><small>FORMULA ERRORS</small><b id="formulaErrors">—</b></div>
@@ -416,6 +435,27 @@ function chart(counts,total){
   const legend=entries.map(([k,v],i)=>'<div class="legend-row"><span class="dot" style="background:'+palette[i%palette.length]+'"></span><span class="legend-name">'+esc(k)+'</span><span class="legend-value">'+fmt(v)+'<span class="legend-share">('+(v/total*100).toFixed(1)+'%)</span></span></div>').join('');
   return'<div class="donut-wrap"><div class="donut" style="background:conic-gradient('+segments.join(',')+')"><div class="donut-center"><small>Total filtered</small><b>'+fmt(total)+'</b></div></div><div class="legend">'+legend+'</div></div>';
 }
+function statusTable(counts,total){
+  const entries=Object.entries(counts).sort((a,b)=>{
+    const ap=norm(a[0])==='PENDING', bp=norm(b[0])==='PENDING';
+    if(ap&&!bp)return -1;
+    if(bp&&!ap)return 1;
+    return b[1]-a[1] || a[0].localeCompare(b[0],undefined,{sensitivity:'base'});
+  });
+  if(!total)return '<tr><td colspan="3" class="empty">No rows match the current filters.</td></tr>';
+  return entries.map(([status,count])=>{
+    const pending=norm(status)==='PENDING';
+    const share=(count/total*100).toFixed(1)+'%';
+    const dot=pending?'#b33a4a':'#008d87';
+    return '<tr class="'+(pending?'pending-row':'')+'">'+
+      '<td><span class="status-badge"><span class="dot" style="background:'+dot+'"></span>'+esc(status)+
+      (pending?'<span class="pending-note">ACTION REQUIRED</span>':'')+
+      '</span></td>'+
+      '<td>'+fmt(count)+'</td>'+
+      '<td>'+share+'</td>'+
+      '</tr>';
+  }).join('');
+}
 function durationHours(value){
   const s=norm(value);
   const dayMatch=s.match(/(\d+)\s*DAY/);
@@ -519,6 +559,7 @@ function render(){
   $('restored').textContent=fmt(restored);
 
   $('statusChart').innerHTML=chart(counts,total);
+  $('statusTable').innerHTML=statusTable(counts,total);
 
   const selectedRestoredDay=S.filters.date!=='ALL'?S.filters.date:manilaTodayKey();
   const selectedRestoredLabel=dateLabel(selectedRestoredDay);
