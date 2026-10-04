@@ -1,8 +1,8 @@
 {
   "version": 2,
   "framework": null,
-  "buildCommand": "npm run build",
-  "outputDirectory": ".",
+  "buildCommand": null,
+  "outputDirectory": null,
   "cleanUrls": true,
   "trailingSlash": false,
   "headers": [
