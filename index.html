@@ -198,7 +198,25 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;co
 .province-note{font-size:8px;color:var(--muted)}
 @media(max-width:900px){.province-detail{max-height:280px}}
  .agent-strip{display:flex;align-items:center;gap:10px;margin:0 0 10px;padding:8px 11px;border:1px solid var(--line);border-radius:10px;background:linear-gradient(90deg,#ffffff,#f3faf9);box-shadow:var(--shadow);font-size:8px;color:var(--muted)}.agent-strip .agent-dot{width:8px;height:8px;border-radius:50%;background:#adb8c3;box-shadow:0 0 0 3px rgba(173,184,195,.12)}.agent-strip.live .agent-dot{background:var(--brand);box-shadow:0 0 0 3px rgba(0,141,135,.12);animation:agentPulse 1.8s infinite}.agent-strip.recovering .agent-dot{background:var(--amber);box-shadow:0 0 0 3px rgba(169,105,0,.12)}.agent-strip.error .agent-dot{background:var(--red);box-shadow:0 0 0 3px rgba(179,58,74,.12)}.agent-strip b{color:var(--brand-deep);letter-spacing:.45px}.agent-strip .agent-meta{margin-left:auto}@keyframes agentPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(.75);opacity:.55}}</style>
-</head>
+<style>
+:root{--bg:#eef3f4;--surface:#fff;--line:#d8e2e4;--brand:#008f88;--brand-deep:#073f43;--text:#14282c;--muted:#66787c;--red:#b83b4d;--shadow:0 8px 24px rgba(18,52,55,.07)}
+body{background:linear-gradient(180deg,#e8eff0 0,#f5f8f8 220px);padding:16px}
+main{max-width:1740px}.top{background:linear-gradient(115deg,#062f33 0%,#07575a 62%,#008f88 100%);border:0;border-radius:16px;padding:16px 18px;box-shadow:0 12px 30px rgba(5,47,51,.18);color:#fff}
+.brand-logo{filter:brightness(0) invert(1);opacity:.96}.hero-kicker,.hero-sub{color:rgba(255,255,255,.72)}h1{color:#fff;font-size:23px;letter-spacing:.25px}
+.pill{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:#fff}.pill.ok,.pill.info{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.22);color:#fff}.pill.ok i,.pill.info i{background:#6ee7d7}.time{color:rgba(255,255,255,.72)}
+.refresh-btn{background:#fff;color:#07575a;border:0;font-weight:900}.refresh-btn:hover{background:#eafaf8}
+.agent-strip{margin:8px 0 12px;background:#f8fbfb;border:1px solid var(--line);border-radius:10px;padding:8px 11px}
+.filters{background:#fff;border:1px solid var(--line);border-top:4px solid var(--brand);border-radius:14px;padding:13px 14px;box-shadow:var(--shadow)}
+.filter-title strong{color:var(--brand-deep);font-size:11px}.filter-title span{color:var(--muted)}
+.kpis{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:12px 0}.kpi{border-radius:12px;box-shadow:var(--shadow);min-height:104px;padding:14px 15px}.kpi .value{font-size:31px}
+.kpi.pending{background:linear-gradient(145deg,#fff,#fff4f5);border-top:4px solid var(--red)}.kpi.restored{background:linear-gradient(145deg,#fff,#effaf8);border-top:4px solid var(--brand)}.kpi.rate{background:linear-gradient(145deg,#fff,#f0f8f9);border-top:4px solid #4d8f9a}
+.status-grid.single-status{gap:12px;margin-top:12px}.panel{border-radius:14px;box-shadow:var(--shadow);padding:14px}.panel-head{padding-bottom:11px;margin-bottom:8px;border-bottom:1px solid #edf2f2}.panel h2{font-size:13px;letter-spacing:.25px}
+.province-section{margin-top:14px;background:#f7fafb;border:1px solid var(--line);border-radius:14px;padding:14px}.province-section-head{margin-bottom:11px}.province-section-head h2{font-size:13px;letter-spacing:.35px}.province-section-head span{font-size:9px}
+.province-grid{gap:9px}.province-card{border-radius:11px;box-shadow:0 4px 14px rgba(18,52,55,.055)}.province-card-head{padding:11px 13px;background:#edf8f7}.province-card-body{background:#fff}
+.province-detail{overflow:auto}.province-detail table{min-width:1120px}.province-detail th,.province-detail td{font-size:9px}.province-detail th{background:#f7fafb}
+.status-table-wrap{border-radius:9px}.status-table tr.pending-row td{background:#fff0f2}.details-tab{background:#07575a}footer{padding-top:12px}
+@media(max-width:1150px){.kpis{grid-template-columns:repeat(2,1fr)}}@media(max-width:720px){body{padding:8px}.top{border-radius:12px}.kpis{grid-template-columns:1fr}.province-section{padding:10px}.province-detail table{min-width:1120px}}
+</style></head>
 <body>
 <main>
 <header class="top">
@@ -220,7 +238,7 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;co
 </header>
 <div id="agentStrip" class="agent-strip"><span class="agent-dot"></span><b>LIVE SOURCE AGENT</b><span id="agentText">checking Google Sheets connectivity…</span><span id="agentMeta" class="agent-meta">AUTO-RECOVERY ON</span></div>
 
-<div id="alert" class="alert"></div><section id="pendingAlert" class="pending-alert" aria-live="polite"><div class="icon">!</div><div><div class="eyebrow">FINAL STATUS • ACTION REQUIRED</div><div class="headline">Pending NAP outage records need attention</div><div id="pendingAlertSub" class="sub">Count is calculated from the filtered DATABASE FINAL STATUS values.</div></div><div><div id="pendingAlertCount" class="count">—<small>PENDING</small></div></div><button id="pendingAlertBtn" type="button">VIEW PENDING BY PROVINCE</button></section>
+<div id="alert" class="alert"></div>
 <div id="info" class="info"></div>
 
 <section class="filters">
@@ -526,6 +544,7 @@ function renderProvinceTables(pendingRows){
       return '<tr>'+
         '<td>'+esc(r.municipality||'—')+'</td>'+
         '<td>'+esc(r.barangay||'—')+'</td>'+
+        '<td>'+esc(r.napCode||'—')+'</td>'+
         '<td>'+esc(r.napStatus||r.concern||'—')+'</td>'+
         '<td>'+esc(r.ospTeam||'—')+'</td>'+
         '<td>'+esc(r.dateEndorsed?new Date(r.dateEndorsed).toLocaleString('en-PH',{timeZone:'Asia/Manila'}):'—')+'</td>'+
@@ -542,7 +561,7 @@ function renderProvinceTables(pendingRows){
         '<div class="province-issue"><table><thead><tr><th>ISSUE</th><th class="num">COUNT</th><th class="num">%</th></tr></thead><tbody>'+
           issueRows.map(([issue,count])=>'<tr><td>'+esc(issue)+'</td><td class="num">'+fmt(count)+'</td><td class="num">'+(rows.length?(count/rows.length*100).toFixed(1):'0.0')+'%</td></tr>').join('')+
         '</tbody></table></div>'+
-        '<div class="province-detail"><table><thead><tr><th>MUNICIPALITY</th><th>BARANGAY</th><th>NAP / ISSUE</th><th>TECHNICIAN</th><th>DATE ENDORSED</th><th class="num">AGE DAYS</th><th>ETR</th><th>RFO</th></tr></thead><tbody>'+
+        '<div class="province-detail"><table><thead><tr><th>MUNICIPALITY</th><th>BARANGAY</th><th>NAP CODE</th><th>NAP / ISSUE</th><th>TECHNICIAN</th><th>DATE ENDORSED</th><th class="num">AGE DAYS</th><th>ETR</th><th>RFO</th></tr></thead><tbody>'+
           detailRows.join('')+
         '</tbody></table></div>'+
         '<div class="province-note">Live records filtered by FINAL STATUS = PENDING and the current dashboard filters.</div>'+
