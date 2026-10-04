@@ -14,7 +14,9 @@
 html,body{margin:0;background:var(--bg);color:var(--text);font:13px/1.45 Arial,Helvetica,sans-serif}
 body{padding:18px}
 main{max-width:1680px;margin:0 auto}
-.top{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin-bottom:14px}
+.top{display:flex;justify-content:space-between;gap:18px;align-items:center;margin-bottom:14px;padding:14px 16px;background:linear-gradient(135deg,#ffffff 0%,#f4fbfa 100%);border:1px solid var(--line);border-radius:14px;box-shadow:0 5px 22px rgba(0,77,73,.07)}
+.hero-copy{display:flex;align-items:center;gap:12px}.hero-kicker{font-size:9px;font-weight:900;letter-spacing:1.4px;color:var(--brand);text-transform:uppercase;margin-bottom:3px}.hero-sub{font-size:10px;color:var(--muted)}
+.sync-actions{display:flex;align-items:center;gap:7px}.refresh-btn{height:34px;border:1px solid var(--brand-line);border-radius:8px;background:var(--brand);color:#fff;padding:0 12px;font-size:9px;font-weight:900;cursor:pointer}.refresh-btn:hover{background:var(--brand-dark)}.refresh-btn:disabled{opacity:.65;cursor:wait}
 .brand{display:flex;gap:14px;align-items:center;min-height:48px}
  .brand-logo{width:72px;height:72px;object-fit:contain;display:block;flex:0 0 72px}.mark{display:none}
 h1{font-size:22px;line-height:1.15;margin:0;font-weight:850;color:var(--brand-deep);letter-spacing:.15px}
@@ -29,7 +31,7 @@ h1{font-size:22px;line-height:1.15;margin:0;font-weight:850;color:var(--brand-de
 .control{display:flex;flex-direction:column;gap:4px}.control label{font-size:8px;font-weight:800;color:var(--muted);letter-spacing:.55px}.control select{height:34px;min-width:145px;border:1px solid #c6d7d5;border-radius:7px;background:#fff;padding:0 9px;color:#20303e;font-size:10px;outline:none}.control select:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(0,141,135,.10)}
 .info,.alert{padding:10px 12px;border-radius:8px;margin-bottom:10px;font-size:10px;display:none;white-space:pre-wrap}
 .info{background:#f0f6fb;border:1px solid #d6e5f1;color:#28526f}.alert{background:#fff1f3;border:1px solid #efc9cf;color:#8f2b3a}
-.filters{display:grid;grid-template-columns:repeat(6,minmax(120px,1fr));gap:8px;background:var(--surface);border:1px solid var(--line);border-top:3px solid var(--brand);border-radius:10px;padding:10px;box-shadow:var(--shadow)}
+.filters{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;box-shadow:var(--shadow);position:relative}display:grid;grid-template-columns:repeat(6,minmax(120px,1fr));gap:8px;background:var(--surface);border:1px solid var(--line);border-top:3px solid var(--brand);border-radius:10px;padding:10px;box-shadow:var(--shadow)}
 .meta{padding:8px 1px 10px;color:var(--muted);font-size:9px}.meta b{color:#273744}
 .kpis{display:grid;grid-template-columns:repeat(2,minmax(200px,1fr));gap:10px}
 .kpi{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;box-shadow:var(--shadow)}
@@ -97,10 +99,16 @@ h1{font-size:22px;line-height:1.15;margin:0;font-weight:850;color:var(--brand-de
 @media(max-width:720px){.status-table th,.status-table td{padding:9px 8px;font-size:10px}.status-table th{font-size:8.5px}}
 footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;color:#7c8996;font-size:8px}
 .loading{padding:30px;text-align:center;color:var(--muted);font-size:10px}
-@media(max-width:1150px){.grid{grid-template-columns:1fr}.data-health{grid-template-columns:repeat(2,1fr)}.filters{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:1150px){.grid{grid-template-columns:1fr}.data-health{grid-template-columns:repeat(2,1fr)}.filters{grid-template-columns:repeat(3,1fr)}
+.filter-title{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;margin-bottom:-2px}.filter-title strong{font-size:10px;color:var(--brand-deep);letter-spacing:.7px}.filter-title span{font-size:8px;color:var(--muted)}.clear-btn{height:34px;border:1px solid #cbd8dc;border-radius:7px;background:#fff;color:#475a63;padding:0 11px;font-size:9px;font-weight:900;cursor:pointer}.clear-btn:hover{border-color:var(--brand);color:var(--brand-deep)}
+.kpis{grid-template-columns:repeat(4,1fr);gap:10px;margin:10px 0}.kpi{position:relative;overflow:hidden;border-radius:12px;box-shadow:var(--shadow);min-height:100px}.kpi:after{content:"";position:absolute;right:-26px;top:-30px;width:92px;height:92px;border-radius:50%;background:rgba(255,255,255,.55)}.kpi.total{background:#fff;border-color:var(--line)}.kpi.rate{background:#eef8f7;border-color:#c9e5e1}.kpi.rate .value{color:var(--brand-deep)}
+.panel{border-radius:12px;box-shadow:var(--shadow)}.panel-head{padding-bottom:10px;border-bottom:1px solid #edf1f2;margin-bottom:8px}.panel-head h2{letter-spacing:.3px}
+.status-grid{gap:10px}.status-grid.single-status{grid-template-columns:minmax(0,1.65fr) minmax(320px,.75fr)}
+@media(max-width:1150px){.status-grid.single-status{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}}
+}
 @media(max-width:720px){
     body{padding:8px;font-size:15px}
-    .top{display:block}.top-right{justify-content:flex-start;margin-top:10px}
+    .top{display:block;padding:12px}.top-right{justify-content:flex-start;margin-top:10px}.sync-actions{flex-wrap:wrap}.hero-sub{font-size:9px}.kpis{grid-template-columns:repeat(2,1fr)}.kpi{min-height:88px}
     .brand{gap:10px}.brand-logo{width:92px;height:30px}.brand h1{font-size:20px;line-height:1.1}
     .filters{grid-template-columns:1fr;gap:10px}.control label{font-size:10px}.control select{height:40px;min-width:0;font-size:13px}
     .kpis{grid-template-columns:1fr;gap:8px}.kpi{padding:14px}.kpi .label{font-size:11px}.kpi .value{font-size:30px}.kpi .note{font-size:9.5px}
@@ -194,18 +202,20 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;co
 <body>
 <main>
 <header class="top">
-  <div class="brand">
-    <img class="brand-logo" src="https://content.convergeict.com/assets/25c65629-d1ee-43a3-82bd-5bed31ecbf06.svg" alt="Converge">
+  <div class="hero-copy">
+    <div class="brand">
+      <img class="brand-logo" src="https://content.convergeict.com/assets/25c65629-d1ee-43a3-82bd-5bed31ecbf06.svg" alt="Converge">
+    </div>
     <div>
+      <div class="hero-kicker">Network Operations • Bicol</div>
       <h1>BICOL NAP OUTAGE MONITORING</h1>
-      <div class="subtitle" style="display:none"></div>
+      <div class="hero-sub">Live operational view of NAP outages, final status, ageing and province-level pending work.</div>
     </div>
   </div>
-  <div class="top-right">
+  <div class="sync-actions">
     <span id="syncBadge" class="pill info"><i></i>SYNC AGENT • CHECKING</span>
     <span id="clock" class="time">—</span>
-    <div class="control"><label>MONTH</label><select id="month"></select></div>
-    <div class="control"><label>DATE</label><select id="date"></select></div>
+    <button id="refreshBtn" class="refresh-btn" type="button">REFRESH</button>
   </div>
 </header>
 
@@ -213,19 +223,23 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;co
 <div id="info" class="info"></div>
 
 <section class="filters">
+  <div class="filter-title"><strong>FILTER &amp; FOCUS</strong><span>All dashboard counts and tables update from the same filtered DATABASE rows.</span></div>
   <div class="control"><label>PROVINCE</label><select id="province"></select></div>
   <div class="control"><label>FINAL STATUS</label><select id="status"></select></div>
   <div class="control"><label>FINDINGS</label><select id="finding"></select></div>
   <div class="control"><label>RFO</label><select id="rfo"></select></div>
   <div class="control"><label>CONCERN</label><select id="concern"></select></div>
   <div class="control"><label>SOURCE</label><select id="sourceSelect" disabled><option>DIRECT GOOGLE SHEETS</option></select></div>
+  <button id="clearFilters" class="clear-btn" type="button">RESET FILTERS</button>
 </section>
 
 <div id="meta" class="meta" style="display:none">Waiting for a direct Google Sheets read…</div>
 
 <section class="kpis">
-  <article class="kpi pending"><div class="label">PENDING</div><div id="pending" class="value">—</div><div class="note">DATABASE FINAL STATUS</div></article>
-  <article class="kpi restored"><div class="label">RESTORED</div><div id="restored" class="value">—</div><div class="note">DATABASE FINAL STATUS (FILTERED)</div></article>
+  <article class="kpi total"><div class="label">TOTAL RECORDS</div><div id="totalRecords" class="value">—</div><div class="note">CURRENT FILTERED DATABASE</div></article>
+  <article class="kpi pending"><div class="label">PENDING</div><div id="pending" class="value">—</div><div class="note">FINAL STATUS • ACTION REQUIRED</div></article>
+  <article class="kpi restored"><div class="label">RESTORED</div><div id="restored" class="value">—</div><div class="note">FINAL STATUS</div></article>
+  <article class="kpi rate"><div class="label">PENDING RATE</div><div id="pendingRate" class="value">—</div><div class="note">PENDING ÷ TOTAL</div></article>
 </section>
 
 
@@ -555,8 +569,10 @@ function render(){
   const pending=db.filter(r=>norm(r.finalStatus)==='PENDING').length;
   const restored=db.filter(r=>norm(r.finalStatus)==='RESTORED').length;
 
+  $('totalRecords').textContent=fmt(total);
   $('pending').textContent=fmt(pending);
   $('restored').textContent=fmt(restored);
+  $('pendingRate').textContent=total?((pending/total)*100).toFixed(1)+'%':'0.0%';
 
   $('statusChart').innerHTML=chart(counts,total);
   $('statusTable').innerHTML=statusTable(counts,total);
@@ -719,6 +735,14 @@ async function fetchSnapshot(){
 }
 function bind(){
   ['province','status','finding','rfo','concern'].forEach(id=>$(id).addEventListener('change',()=>{S.filters[id]=$(id).value;render()}));
+  $('clearFilters').addEventListener('click',()=>{
+    S.filters={month:'ALL',date:'ALL',province:'ALL',status:'ALL',finding:'ALL',rfo:'ALL',concern:'ALL'};
+    render();
+  });
+  $('refreshBtn').addEventListener('click',async()=>{
+    const b=$('refreshBtn');b.disabled=true;b.textContent='SYNCING…';
+    try{await fetchSnapshot()}finally{b.disabled=false;b.textContent='REFRESH'}
+  });
   $('month').addEventListener('change',()=>{S.filters.month=$('month').value;S.filters.date='ALL';render()});
   $('date').addEventListener('change',()=>{S.filters.date=$('date').value;render()});
   $('napProvince').addEventListener('change',()=>{S.napFilters.province=$('napProvince').value;S.napFilters.municipality='ALL';S.napFilters.barangay='ALL';render()});
