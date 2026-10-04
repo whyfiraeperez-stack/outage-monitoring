@@ -716,8 +716,8 @@ function showSnapshotError(j,requestError){
   setAlert(parts.join(' • '));
   const next=j?.nextAction||'Review the source error and retry.';
   setInfo(next);
-  if(S.lastGood){S.snap=S.lastGood;render();$('meta').innerHTML='LAST VERIFIED SNAPSHOT • '+(S.lastGood.checkedAt?new Date(S.lastGood.checkedAt).toLocaleString():'—')+' • live source currently unavailable';}
-  $('updated').textContent='Source check failed '+new Date().toLocaleString();
+  if(S.lastGood){S.snap=S.lastGood;render();const meta=$('meta');if(meta)meta.innerHTML='LAST VERIFIED SNAPSHOT • '+(S.lastGood.checkedAt?new Date(S.lastGood.checkedAt).toLocaleString():'—')+' • live source currently unavailable';}
+  const updated=$('updated');if(updated)updated.textContent='Source check failed '+new Date().toLocaleString();
 }
 async function fetchSourceHealth(){
   const strip=$('agentStrip'), textEl=$('agentText'), meta=$('agentMeta');
