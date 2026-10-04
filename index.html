@@ -82,7 +82,7 @@ h1{font-size:22px;line-height:1.15;margin:0;font-weight:850;color:var(--brand-de
 
 .note-line{font-size:8px;color:var(--muted);margin-top:8px}
 .empty{padding:24px;text-align:center;color:#7c8996;font-size:9px}
-.data-health{display:none}.health-card{transition:border-color .15s ease,box-shadow .15s ease}.health-card:hover{border-color:var(--brand-line);box-shadow:0 2px 8px rgba(0,77,73,.05)}
+.data-health{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px}.health-card{transition:border-color .15s ease,box-shadow .15s ease}.health-card:hover{border-color:var(--brand-line);box-shadow:0 2px 8px rgba(0,77,73,.05)}
 .health-card{background:var(--surface-2);border:1px solid #e8edf2;border-radius:8px;padding:9px}.health-card small{display:block;color:var(--muted);font-size:8px}.health-card b{font-size:13px;margin-top:3px;display:block}
 .status-table-wrap{margin-top:10px;border:1px solid var(--line);border-radius:8px;overflow:hidden}
 .status-table{width:100%;border-collapse:collapse;table-layout:fixed}
@@ -279,6 +279,7 @@ main{max-width:1740px}.top{background:linear-gradient(115deg,#062f33 0%,#07575a 
     <div class="data-health">
       <div class="health-card"><small>DATABASE ROWS</small><b id="dbRows">—</b></div>
       <div class="health-card"><small>FORMULA ERRORS</small><b id="formulaErrors">—</b></div>
+      <div class="health-card"><small>NAP CODE MATCH</small><b id="napCodeMatch">—</b></div>
       <div class="health-card"><small>LAST VERIFIED</small><b id="lastVerified">—</b></div>
     </div>
   </article>
@@ -682,6 +683,10 @@ function render(){
 
   $('dbRows').textContent=fmt(S.snap?.diagnostics?.databaseRows);
   $('formulaErrors').textContent=fmt(S.snap?.diagnostics?.formulaErrors);
+  const napMatched=Number(S.snap?.diagnostics?.napCodeMatched||0);
+  const napUnmatched=Number(S.snap?.diagnostics?.napCodeUnmatchedPending||0);
+  const napMatch=$('napCodeMatch');
+  if(napMatch) napMatch.textContent=napUnmatched===0 ? fmt(napMatched)+' / '+fmt(napMatched) : fmt(napMatched)+' / '+fmt(napMatched+napUnmatched);
   $('lastVerified').textContent=S.snap?.checkedAt?new Date(S.snap.checkedAt).toLocaleTimeString():'—';
 
 
@@ -726,7 +731,7 @@ function render(){
     (S.napFilters.barangay!=='ALL'?' • '+S.napFilters.barangay:'');
 
   $('updated').textContent='Last update '+(S.snap?.checkedAt?new Date(S.snap.checkedAt).toLocaleString():'—');
-  $('foot').textContent='Source: '+(S.snap?.source||'Google Sheets')+' • '+(S.snap?.syncState==='SYNCED'?'Direct live read':'Recovery feed')+' • Live agent auto-retry enabled';
+  $('foot').textContent='Source: '+(S.snap?.source||'Google Sheets')+' • '+(S.snap?.syncState==='SYNCED'?'Direct live read':'Recovery feed')+' • Exact NAP CODE reconciliation enabled';
 }
 function showSnapshotError(j,requestError){
   const strip=$('agentStrip'); if(strip){strip.classList.remove('live','recovering');strip.classList.add('error');$('agentText').textContent=(j?.diagnostics?.message||requestError||'source error');$('agentMeta').textContent='AUTO-RECOVERY RETRYING';}
