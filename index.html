@@ -33,7 +33,7 @@ h1{font-size:22px;line-height:1.15;margin:0;font-weight:850;color:var(--brand-de
 .info{background:#f0f6fb;border:1px solid #d6e5f1;color:#28526f}.alert{background:#fff1f3;border:1px solid #efc9cf;color:#8f2b3a}
 .filters{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;box-shadow:var(--shadow);position:relative}display:grid;grid-template-columns:repeat(6,minmax(120px,1fr));gap:8px;background:var(--surface);border:1px solid var(--line);border-top:3px solid var(--brand);border-radius:10px;padding:10px;box-shadow:var(--shadow)}
 .meta{padding:8px 1px 10px;color:var(--muted);font-size:9px}.meta b{color:#273744}
-.kpis{display:grid;grid-template-columns:repeat(2,minmax(200px,1fr));gap:10px}
+.kpis{display:grid;grid-template-columns:repeat(2,minmax(200px,1fr));gap:10px}.pending-alert{display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:center;margin:12px 0 10px;padding:14px 16px;background:linear-gradient(135deg,#fff1f3 0%,#fff8f9 100%);border:1px solid #efc9cf;border-left:6px solid var(--red);border-radius:12px;box-shadow:0 3px 14px rgba(179,58,74,.08)}.pending-alert .icon{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:#b33a4a;color:#fff;font-size:20px;font-weight:900}.pending-alert .eyebrow{font-size:8px;font-weight:900;letter-spacing:1px;color:#a12f3e;text-transform:uppercase}.pending-alert .headline{font-size:16px;font-weight:900;color:#7e2634;margin-top:2px}.pending-alert .sub{font-size:9px;color:#8f5960;margin-top:3px}.pending-alert .count{font-size:30px;line-height:1;font-weight:900;color:#9d2e3d;text-align:right}.pending-alert .count small{display:block;font-size:8px;letter-spacing:.7px;color:#9f6067;margin-top:4px}.pending-alert button{height:32px;border:1px solid #e5aeb7;border-radius:7px;background:#fff;color:#8e2b3a;padding:0 11px;font-size:9px;font-weight:900;cursor:pointer}.pending-alert button:hover{background:#ffe7ea}@media(max-width:720px){.pending-alert{grid-template-columns:auto 1fr;gap:10px}.pending-alert .count{grid-column:2;text-align:left;font-size:26px}.pending-alert button{grid-column:1/-1;width:100%}}
 .kpi{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;box-shadow:var(--shadow)}
 .kpi .label{font-size:8px;font-weight:800;letter-spacing:.6px;color:var(--muted)}
 .kpi .value{font-size:30px;line-height:1;margin-top:7px;font-weight:850}
@@ -219,7 +219,7 @@ footer{display:flex;justify-content:space-between;gap:12px;padding:10px 1px 0;co
   </div>
 </header>
 
-<div id="alert" class="alert"></div>
+<div id="alert" class="alert"></div><section id="pendingAlert" class="pending-alert" aria-live="polite"><div class="icon">!</div><div><div class="eyebrow">FINAL STATUS • ACTION REQUIRED</div><div class="headline">Pending NAP outage records need attention</div><div id="pendingAlertSub" class="sub">Count is calculated from the filtered DATABASE FINAL STATUS values.</div></div><div><div id="pendingAlertCount" class="count">—<small>PENDING</small></div></div><button id="pendingAlertBtn" type="button">VIEW PENDING BY PROVINCE</button></section>
 <div id="info" class="info"></div>
 
 <section class="filters">
@@ -739,6 +739,7 @@ function bind(){
     S.filters={month:'ALL',date:'ALL',province:'ALL',status:'ALL',finding:'ALL',rfo:'ALL',concern:'ALL'};
     render();
   });
+  $('pendingAlertBtn').addEventListener('click',()=>{ const el=$('provinceGrid'); if(el){el.scrollIntoView({behavior:'smooth',block:'start'});} });
   $('refreshBtn').addEventListener('click',async()=>{
     const b=$('refreshBtn');b.disabled=true;b.textContent='SYNCING…';
     try{await fetchSnapshot()}finally{b.disabled=false;b.textContent='REFRESH'}
