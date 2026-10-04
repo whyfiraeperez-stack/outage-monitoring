@@ -6,7 +6,7 @@
     "node": "22.x"
   },
   "scripts": {
-    "build": "node -e \"const fs=require('fs');const p='index.html';let s=fs.readFileSync(p,'utf8');s=s.replace(/\\n<!-- VERCEL_BUILD:[^>]*-->/g,'');s += '\\n<!-- VERCEL_BUILD:'+((process.env.VERCEL_GIT_COMMIT_SHA)||Date.now())+' -->\\n';fs.writeFileSync(p,s);console.log('Forced fresh static index build')\"",
+    "build": "node -e \"const fs=require('fs');const sha=process.env.VERCEL_GIT_COMMIT_SHA||Date.now();for(const p of ['index.html','api/snapshot.js']){let s=fs.readFileSync(p,'utf8');s=s.replace(/\\n<!-- VERCEL_BUILD:[^>]*-->\\n?/g,'').replace(/\\n\\/\\/ VERCEL_API_BUILD:[^\\n]*\\n?/g,'');s+='\\n'+(p==='index.html'?'<!-- VERCEL_BUILD:'+sha+' -->':'// VERCEL_API_BUILD:'+sha)+'\\n';fs.writeFileSync(p,s)}console.log('Forced fresh static + API build '+sha)\"",
     "start": "node -e \"console.log('Static Vercel deployment')\""
   },
   "dependencies": {
